@@ -19,3 +19,5 @@ Créer le dépôt haagen-dazs-proteines et importer tous les fichiers à la raci
 
 ## À compléter
 Raison sociale et SIREN de l’entité Pappers, URL précise, comptes et dates de clôture ; relevés concurrents ; enquête et budget. Ne pas assimiler les comptes de l’entité aux comptes mondiaux de la marque. Aucun prix final ni budget n’a été inventé.
+
+Projet de groupe — année 2026–2027.
