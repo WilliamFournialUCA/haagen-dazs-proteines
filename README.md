@@ -4,9 +4,8 @@ Site étudiant statique en français, sans dépendance ni compilation.
 
 ## Pages
 - index.html : projet et parcours
-- marche.html : périmètre et contexte documentaire
+- marche.html : périmètre, tendances et analyse des trois cercles de concurrents
 - comptes.html : analyse comptable transmise par le groupe
-- concurrents.html : trame à compléter
 - prix.html : prix et budget à venir
 - sources.html : sources et informations manquantes
 - style.css : présentation commune et responsive
