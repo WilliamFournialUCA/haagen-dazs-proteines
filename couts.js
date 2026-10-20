@@ -41,6 +41,7 @@ function update(){
  for(const [k,v] of Object.entries(m.ingredients)){put('qty-'+k,number(v.kg*1000,2)+' g');put('cost-'+k,euro(v.cost,3));}
  put('qty-powder',number(m.powderKg*1000,2)+' g');put('price-powder',euro(m.powderPrice,2)+'/kg');put('cost-powder',euro(m.powderCost,3));
  const priceEl=document.getElementById('price-powder'); priceEl.href=m.kind==='wpc'?'https://vespertool.com/blog/commodity-price-risk-management/':'https://www.dcamarketintelligence.com/update/3442/dca-market-intelligence-launches-new-price-benchmarks-for-europe-s-fast-growing-whey-protein-market';
+ document.querySelector('[data-protein-source]').href=priceEl.href;
  put('protein-net',number(m.concentration*100,1)+' % de la poudre livrée');
  put('cost-headroom',euro(3.5-m.full,2));
  put('target-message',m.full<=3.5?'Sous le plafond de 3,50 € HT dans ce scénario.':'Au-dessus du plafond de 3,50 € HT dans ce scénario. Revoir volume, recette ou achats.');
@@ -62,3 +63,4 @@ function update(){
 }
 form.addEventListener('input',update);form.addEventListener('reset',()=>setTimeout(update,0));update();
 })();
+
