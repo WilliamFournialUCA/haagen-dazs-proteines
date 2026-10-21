@@ -1,10 +1,12 @@
 # Actualiser les résultats du questionnaire
 
-## Synchronisation horaire (connexion Google à terminer)
+## Synchronisation horaire
 
 Le workflow `.github/workflows/questionnaire-sync.yml` lit l’onglet **Réponses** toutes les heures (minute 17 UTC), recalcule les graphiques et croisements, puis demande explicitement un déploiement GitHub Pages. Les exécutions planifiées peuvent être retardées par GitHub. Le site continue à utiliser `data/questionnaire.json` : aucune donnée brute ou clé Google n’est envoyée au navigateur.
 
-Le Google Sheet est privé. Une connexion initiale est nécessaire avant la première exécution réussie :
+Le Google Sheet reste privé. La connexion en lecture seule a été validée le 21 octobre 2026 : [synchronisation réussie](https://github.com/WilliamFournialUCA/haagen-dazs-proteines/actions/runs/39572127152), puis [publication Pages réussie](https://github.com/WilliamFournialUCA/haagen-dazs-proteines/actions/runs/39572159341).
+
+Pour reconfigurer la connexion si nécessaire :
 
 1. Dans [Google Cloud](https://console.cloud.google.com/), créer ou sélectionner un projet et activer **Google Sheets API**.
 2. Créer un compte de service dédié, sans rôle IAM de projet et sans délégation de domaine. Créer une clé JSON pour ce compte de service. Ne jamais déposer cette clé dans le dépôt ou dans un message.
