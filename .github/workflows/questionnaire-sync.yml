@@ -1,0 +1,50 @@
+name: Actualiser les résultats du questionnaire
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: questionnaire-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer le client Google
+        run: python -m pip install 'google-auth[requests]>=2.38,<3'
+      - name: Lire le Sheet privé et calculer les statistiques
+        env:
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+        run: python scripts/sync_questionnaire.py
+      - name: Enregistrer uniquement les agrégats modifiés
+        run: |
+          if ! git diff --quiet -- data/questionnaire.json; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -- data/questionnaire.json
+            git commit -m 'Actualiser les statistiques agrégées du questionnaire'
+            git push origin HEAD:main
+          fi
+      # A GITHUB_TOKEN push does not trigger the usual Pages build.
+      # Request it explicitly, including after a retry with unchanged aggregates.
+      - name: Demander la publication GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST 'repos/${{ github.repository }}/pages/builds' --silent
+      - name: Résumé
+        run: echo 'Lecture du Sheet réussie ; publication Pages demandée. Seul le JSON agrégé peut être modifié.' >> "$GITHUB_STEP_SUMMARY"

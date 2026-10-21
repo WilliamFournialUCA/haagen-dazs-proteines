@@ -68,7 +68,7 @@ function render(){
 }
 fetch('data/questionnaire.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();}).then(d=>{
  if(d.schema_version!==1||!d.groups?.all)throw Error('Format non reconnu');data=d;
- const date=new Date(data.updated_at);$('snapshot-date').textContent='Données préparées le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(date)+' · instantané manuel.';
+ const date=new Date(data.updated_at);$('snapshot-date').textContent='Données préparées le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(date)+(data.manual_update===false?' · synchronisation horaire ; date du dernier changement des statistiques.':' · instantané manuel ; synchronisation en attente de connexion.');
  for(const id of ['cross-x','cross-y']){const s=$(id);for(const[k,v]of Object.entries(data.variables)){const o=node('option',v.label);o.value=k;s.append(o);}}$('cross-x').value='sport';$('cross-y').value='intention_achat';
  $('variant-filter').addEventListener('change',e=>{selected=e.target.value;render();});$('cross-x').addEventListener('change',()=>crossing(data.groups[selected]));$('cross-y').addEventListener('change',()=>crossing(data.groups[selected]));
  $('loading').hidden=true;$('survey-dashboard').hidden=false;render();
