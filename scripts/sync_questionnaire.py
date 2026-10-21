@@ -11,13 +11,14 @@ REQUIRED = {'variant_grams', 'genre', 'age', 'csp', 'sport', 'culpabilite',
             'frequence_glaces', 'proteines_habitude', *PRICE_KEYS,
             'achat_499', 'achat_549', 'achat_599', 'retenu_proteines',
             'protein_grams', 'intention_achat'}
+OPTIONAL = {'perception_proteines'}
 
 
 def rows_from_values(values):
     if not isinstance(values, list) or not values or not isinstance(values[0], list):
         raise ValueError('En-têtes absents : aucune donnée publiée.')
     headers = [str(v).strip() for v in values[0]]
-    if len(headers) != len(set(headers)) or not REQUIRED <= set(headers):
+    if len([h for h in headers if h]) != len({h for h in headers if h}) or not REQUIRED <= set(headers):
         raise ValueError('Colonnes manquantes ou dupliquées : aucune donnée publiée.')
     rows = []
     for cells in values[1:]:
@@ -26,12 +27,12 @@ def rows_from_values(values):
         if any(str(v).strip() for v in cells):
             # Ignore any unrelated or identifying columns before aggregation.
             rows.append({key: cells[i] if i < len(cells) else ''
-                         for i, key in enumerate(headers) if key in REQUIRED})
+                         for i, key in enumerate(headers) if key in REQUIRED | OPTIONAL})
     return rows
 
 
 def save_aggregates(values, output=OUTPUT):
-    data = build(rows_from_values(values))
+    data = build(rows_from_values(values), values[0])
     if data['quality']['ignored_invalid_variant']:
         raise ValueError('Version de questionnaire inconnue : vérifier le Sheet avant publication.')
     data['manual_update'] = False
@@ -64,7 +65,7 @@ def main():
         with AuthorizedSession(credentials) as session:
             response = session.get(
                 f'https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}/values/'
-                + quote("'Réponses'!A:S", safe=''),
+                + quote("'Réponses'", safe=''),
                 params={'valueRenderOption': 'UNFORMATTED_VALUE'}, timeout=60)
             if response.status_code != 200:
                 raise ValueError(f'Lecture Google Sheets refusée (HTTP {response.status_code}). Vérifier API activée et partage Lecteur.')

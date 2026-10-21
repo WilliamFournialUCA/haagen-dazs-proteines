@@ -5,7 +5,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 SOURCE='https://docs.google.com/spreadsheets/d/1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y/edit?usp=sharing'
 LABELS={
- 'variant':('Version présentée',['36 g','48 g']),
+ 'variant':('Version présentée',['16 g','48 g','36 g']),
  'genre':('Genre',['Un homme','Une femme','Autre']),
  'age_band':('Tranche d’âge',['Moins de 18 ans','18–24 ans','25–34 ans','35–44 ans','45–54 ans','55–64 ans','65 ans et plus']),
  'csp':('Catégorie socioprofessionnelle',['Agriculteur / Agricultrice exploitant(e)','Artisan(e), commerçant(e) ou chef(fe) d’entreprise','Cadre ou profession intellectuelle supérieure','Profession intermédiaire','Employé(e)','Ouvrier / Ouvrière','Retraité(e)','Étudiant(e) ou élève','Sans activité professionnelle','Autre situation']),
@@ -17,7 +17,14 @@ LABELS={
  'achat_549':('Achat à 5,49 €',['Très faible','Faible','Moyenne','Élevée','Très élevée']),
  'achat_599':('Achat à 5,99 €',['Très faible','Faible','Moyenne','Élevée','Très élevée']),
  'retenu_proteines':('Déclare avoir retenu les protéines',['oui','non']),
+ 'perception_proteines':('Perception : glace riche en protéines',['1','2','3','4','5']),
  'intention_achat':('Intention générale d’achat',['1','2','3','4','5'])}
+PERCEPTION_TEXT={
+ '1 - Pas du tout d’accord':'1',
+ '2 - Pas d’accord':'2',
+ '3 - Ni d’accord ni en désaccord (ou Sans opinion)':'3',
+ '4 - D’accord':'4',
+ '5 - Tout à fait d’accord':'5'}
 PRICE_KEYS=['prix_trop_bas','prix_bonne_affaire','prix_cher','prix_trop_cher']
 def number(x):
  try:
@@ -31,11 +38,12 @@ def age_band(x):
  return LABELS['age_band'][1][0 if v<18 else 1 if v<25 else 2 if v<35 else 3 if v<45 else 4 if v<55 else 5 if v<65 else 6]
 def clean(row):
  g=number(row.get('variant_grams'))
- if g not in (36,48):return None
+ if g not in (16,36,48):return None
  out={'variant':str(int(g))+' g','age_band':age_band(row.get('age'))}
  for k,(_,options) in LABELS.items():
   if k not in out:
    v=str(row.get(k,'')).strip().replace("'",'’')
+   if k=='perception_proteines':v=PERCEPTION_TEXT.get(v,v)
    out[k]=v if v in options else None
  out['prices']=[number(row.get(k)) for k in PRICE_KEYS]
  out['protein_grams']=number(row.get('protein_grams'))
@@ -80,13 +88,13 @@ def group_stats(rows):
    xs=[v for v in xo if any(a==v for a,_ in count)];ys=[v for v in yo if any(z==v for _,z in count)]
    cross[x+'|'+y]={'n':sum(count.values()),'rows':xs,'columns':ys,'counts':[[count[a,z] for z in ys] for a in xs]}
  return {'n':n,'distributions':distributions,'prices':price,'purchase':purchase,'memory':memory,'cross':cross}
-def build(raw):
+def build(raw,source_columns=None):
  rows=[clean(r) for r in raw];invalid=sum(r is None for r in rows);rows=[r for r in rows if r is not None]
- return {'schema_version':1,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False},'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':{'all':group_stats(rows),'36':group_stats([r for r in rows if r['variant']=='36 g']),'48':group_stats([r for r in rows if r['variant']=='48 g'])}}
+ return {'schema_version':2,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False,'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r})},'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':{'all':group_stats(rows),**{str(v):group_stats([r for r in rows if r['variant']==str(v)+' g']) for v in (16,48,36)}}}
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('input',type=Path);p.add_argument('--output',type=Path,default=Path(__file__).resolve().parents[1]/'data/questionnaire.json');a=p.parse_args()
  s=a.input.read_text(encoding='utf-8-sig');delimiter='\t' if '\t' in s.splitlines()[0] else ';' if ';' in s.splitlines()[0] else ','
  reader=csv.DictReader(s.splitlines(),delimiter=delimiter)
  if not {'variant_grams',*PRICE_KEYS,'intention_achat'}<=set(reader.fieldnames or []):raise SystemExit('Colonnes manquantes : utiliser l’export de l’onglet Réponses, sans renommer les en-têtes.')
- raw=[r for r in reader if any(str(v or '').strip() for v in r.values())];data=build(raw);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n');print(f"Statistiques agrégées générées : {data['groups']['all']['n']} réponses. Aucun enregistrement individuel exporté.")
+ raw=[r for r in reader if any(str(v or '').strip() for v in r.values())];data=build(raw,reader.fieldnames);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n');print(f"Statistiques agrégées générées : {data['groups']['all']['n']} réponses. Aucun enregistrement individuel exporté.")
 if __name__=='__main__':main()

@@ -35,9 +35,23 @@ Références techniques : [API Google Sheets](https://developers.google.com/work
 
 Les données agrégées peuvent refléter une seule personne dans un très petit groupe. La publication de ces petits effectifs a été demandée pour le suivi pédagogique. L’âge exact et l’horodatage individuel ne sont jamais exportés. Les cellules des croisements contiennent uniquement des effectifs.
 
+## Mise à jour du questionnaire du 21 octobre 2026
+
+Le questionnaire actuel présente **16 g / 48 g**. Les éventuelles anciennes réponses **36 g** sont conservées dans un groupe séparé, sans recodage en 16 g. La mémorisation exacte est comparée au grammage effectivement assigné à chaque participation. Les réponses supprimées du Sheet ne sont pas restaurées depuis les statistiques publiques précédentes.
+
+La nouvelle question « Selon vous, cette glace est-elle riche en protéines ? » utilise `perception_proteines`, avec une échelle d’accord de 1 à 5. Le script accepte les cinq libellés du formulaire (apostrophes droites ou courbes) ainsi que les scores seuls. Cette variable est ajoutée aux distributions, aux comparaisons et à tous les croisements ; sa base comprend uniquement les réponses renseignées. Le regroupement d’accord correspond aux scores 4 et 5. Il est distinct de l’intention d’achat et de la mémorisation.
+
+Au contrôle initial, la nouvelle colonne n’était pas encore présente dans le Sheet. Le site indique explicitement cet état et ne produit aucun pourcentage fictif. La personne qui maintient la collecte Apps Script doit vérifier que `perception_proteines`, envoyé par le formulaire, est effectivement enregistré sous cet en-tête dans l’onglet Réponses. Il faut adapter la correspondance des colonnes et redéployer le script si son fonctionnement le nécessite ; ajouter seulement un en-tête ne garantit pas que les valeurs sont enregistrées. Les anciennes valeurs manquantes ne peuvent pas être reconstituées à partir du souvenir des grammes.
+
+Le lecteur automatique couvre désormais l’onglet entier (au lieu de s’arrêter à la colonne S), et sélectionne uniquement les champs autorisés en mémoire. La nouvelle colonne peut ainsi être ajoutée à droite ou déplacée sans modifier le lecteur. Les colonnes personnelles ou inconnues restent exclues des agrégats. Un en-tête vide n’est pas une variable ; les doublons d’en-têtes non vides restent refusés.
+
+Vérification locale : `python -m unittest discover -s tests -v`. Le format des statistiques est désormais `schema_version: 2` et les fichiers HTML, JavaScript et JSON doivent être publiés ensemble.
+
 ## Colonnes attendues
 
 `variant_grams`, `genre`, `age`, `csp`, `sport`, `culpabilite`, `frequence_glaces`, `proteines_habitude`, `prix_trop_bas`, `prix_bonne_affaire`, `prix_cher`, `prix_trop_cher`, `achat_499`, `achat_549`, `achat_599`, `retenu_proteines`, `protein_grams`, `intention_achat`.
+
+Nouvelle colonne facultative, nécessaire à l’analyse de perception : `perception_proteines`. Son absence laisse les autres analyses fonctionner et s’affiche explicitement sur le site. `variant_condition` peut être transmise par le formulaire mais n’est pas utilisée pour remplacer `variant_grams`.
 
 La colonne d’horodatage peut être présente mais n’est pas publiée. Les noms, adresses ou autres nouvelles colonnes éventuelles ne sont pas repris.
 
