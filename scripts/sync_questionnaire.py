@@ -3,32 +3,10 @@ import json
 import os
 from pathlib import Path
 from urllib.parse import quote
-from build_questionnaire_data import build, PRICE_KEYS
+from build_questionnaire_data import build, rows_from_values, REQUIRED
 
 SHEET_ID = '1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y'
 OUTPUT = Path(__file__).resolve().parents[1] / 'data/questionnaire.json'
-REQUIRED = {'variant_grams', 'genre', 'age', 'csp', 'sport', 'culpabilite',
-            'frequence_glaces', 'proteines_habitude', *PRICE_KEYS,
-            'achat_499', 'achat_549', 'achat_599', 'retenu_proteines',
-            'protein_grams', 'intention_achat'}
-OPTIONAL = {'perception_proteines'}
-
-
-def rows_from_values(values):
-    if not isinstance(values, list) or not values or not isinstance(values[0], list):
-        raise ValueError('En-têtes absents : aucune donnée publiée.')
-    headers = [str(v).strip() for v in values[0]]
-    if len([h for h in headers if h]) != len({h for h in headers if h}) or not REQUIRED <= set(headers):
-        raise ValueError('Colonnes manquantes ou dupliquées : aucune donnée publiée.')
-    rows = []
-    for cells in values[1:]:
-        if not isinstance(cells, list) or len(cells) > len(headers):
-            raise ValueError('Structure de ligne invalide : aucune donnée publiée.')
-        if any(str(v).strip() for v in cells):
-            # Ignore any unrelated or identifying columns before aggregation.
-            rows.append({key: cells[i] if i < len(cells) else ''
-                         for i, key in enumerate(headers) if key in REQUIRED | OPTIONAL})
-    return rows
 
 
 def save_aggregates(values, output=OUTPUT):

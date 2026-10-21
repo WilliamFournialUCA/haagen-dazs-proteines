@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_questionnaire_data import build
+from build_questionnaire_data import build, LEGACY_COLUMNS, CURRENT_COLUMNS
 from sync_questionnaire import REQUIRED, rows_from_values, save_aggregates
 
 
@@ -55,6 +55,39 @@ class QuestionnaireDataTests(unittest.TestCase):
         self.assertTrue(d['quality']['perception_column_present'])
         self.assertEqual(d['groups']['all']['distributions']['perception_proteines']['counts'][2]['count'], 1)
         self.assertNotIn('private@example.test', json.dumps(d))
+
+    def test_verified_shifted_export_preserves_question_meanings(self):
+        new = row(16, "4 - D'accord")
+        new.update(variant_condition='16 g de protéines et réduit en sucre',
+                   genre='Un homme', sport='Rarement ou jamais')
+        old = row(36)
+        shifted = [new.get(k, '') for k in CURRENT_COLUMNS]
+        values = [LEGACY_COLUMNS, [old.get(k, '') for k in LEGACY_COLUMNS], shifted]
+        mapped = rows_from_values(values)
+        d = build(mapped, LEGACY_COLUMNS)
+        self.assertEqual(d['quality']['recovered_layout_rows'], 1)
+        self.assertTrue(d['quality']['perception_data_available'])
+        self.assertFalse(d['quality']['perception_column_present'])
+        self.assertEqual(mapped[1]['genre'], 'Un homme')
+        self.assertEqual(mapped[1]['sport'], 'Rarement ou jamais')
+        self.assertEqual(mapped[1]['intention_achat'], '4')
+        self.assertEqual(d['groups']['16']['prices']['medians'], [2,4,6,8])
+        self.assertEqual(d['groups']['16']['memory']['correct'], 1)
+        self.assertEqual(d['groups']['36']['n'], 1)
+        self.assertEqual(d['groups']['16']['distributions']['perception_proteines']['counts'][3]['count'], 1)
+
+    def test_realigned_headers_are_supported_without_recovery(self):
+        new = row(48, "5 - Tout à fait d'accord")
+        new['variant_condition'] = '48 g de protéines et réduit en sucre'
+        d = build(rows_from_values([CURRENT_COLUMNS, [new.get(k, '') for k in CURRENT_COLUMNS]]), CURRENT_COLUMNS)
+        self.assertEqual(d['quality']['recovered_layout_rows'], 0)
+        self.assertTrue(d['quality']['perception_column_present'])
+        self.assertEqual(d['groups']['48']['distributions']['perception_proteines']['counts'][4]['count'], 1)
+
+    def test_unrecognized_or_incomplete_overflow_is_rejected(self):
+        for cells in [[16]*21, ['',16,'16 g de protéines et réduit en sucre']+['']*17]:
+            with self.assertRaises(ValueError):
+                rows_from_values([LEGACY_COLUMNS, cells])
 
     def test_sync_idempotency_and_last_good_snapshot(self):
         headers = sorted(REQUIRED) + ['perception_proteines']

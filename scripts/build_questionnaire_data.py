@@ -26,6 +26,47 @@ PERCEPTION_TEXT={
  '4 - D’accord':'4',
  '5 - Tout à fait d’accord':'5'}
 PRICE_KEYS=['prix_trop_bas','prix_bonne_affaire','prix_cher','prix_trop_cher']
+LEGACY_COLUMNS = ['submitted_at','variant_grams','genre','age','csp','sport',
+ 'culpabilite','frequence_glaces','proteines_habitude','prix_trop_bas',
+ 'prix_bonne_affaire','prix_cher','prix_trop_cher','achat_499','achat_549',
+ 'achat_599','retenu_proteines','protein_grams','intention_achat']
+CURRENT_COLUMNS = LEGACY_COLUMNS[:2]+['variant_condition']+LEGACY_COLUMNS[2:-1]+['perception_proteines','intention_achat']
+REQUIRED = set(LEGACY_COLUMNS)-{'submitted_at'}
+OPTIONAL = {'perception_proteines'}
+
+def rows_from_values(values):
+ """Allow aligned exports and the verified new payload under old headers only."""
+ if not isinstance(values,list) or not values or not isinstance(values[0],list):
+  raise ValueError('En-têtes absents : aucune donnée publiée.')
+ headers=[str(v).strip() for v in values[0]]
+ named=[h for h in headers if h]
+ if len(named)!=len(set(named)) or not REQUIRED<=set(named):
+  raise ValueError('Colonnes manquantes ou dupliquées : aucune donnée publiée.')
+ legacy=headers[:len(LEGACY_COLUMNS)]==LEGACY_COLUMNS and not any(headers[len(LEGACY_COLUMNS):])
+ rows=[]
+ for cells in values[1:]:
+  if not isinstance(cells,list):raise ValueError('Structure de ligne invalide : aucune donnée publiée.')
+  if not any(str(v).strip() for v in cells):continue
+  # The new form inserts variant_condition at C and perception_proteines at T.
+  # The verified Apps Script export still uses the 19 old headers. Recognize
+  # exactly this layout by its length and its explicit matching condition.
+  condition=str(cells[2]).strip() if len(cells)>2 else ''
+  grams=number(cells[1]) if len(cells)>1 else None
+  matching_condition=grams in (16,48) and condition==str(int(grams))+' g de protéines et réduit en sucre'
+  recovered=legacy and matching_condition
+  if recovered:
+   if len(cells)!=len(CURRENT_COLUMNS):
+    raise ValueError('Structure de ligne invalide : nouveau format incomplet.')
+   layout=CURRENT_COLUMNS
+  else:
+   if len(cells)>len(headers) or any(not h and i<len(cells) and str(cells[i]).strip() for i,h in enumerate(headers)):
+    raise ValueError('Structure de ligne invalide : cellules sans en-tête reconnu.')
+   layout=headers
+  row={key:cells[i] if i<len(cells) else '' for i,key in enumerate(layout) if key in REQUIRED|OPTIONAL}
+  if recovered:row['_recovered_layout']=True
+  rows.append(row)
+ return rows
+
 def number(x):
  try:
   v=float(str(x).strip().replace(',','.'));return v if math.isfinite(v) else None
@@ -90,11 +131,9 @@ def group_stats(rows):
  return {'n':n,'distributions':distributions,'prices':price,'purchase':purchase,'memory':memory,'cross':cross}
 def build(raw,source_columns=None):
  rows=[clean(r) for r in raw];invalid=sum(r is None for r in rows);rows=[r for r in rows if r is not None]
- return {'schema_version':2,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False,'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r})},'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':{'all':group_stats(rows),**{str(v):group_stats([r for r in rows if r['variant']==str(v)+' g']) for v in (16,48,36)}}}
+ return {'schema_version':2,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False,'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r}),'perception_data_available':'perception_proteines' in (source_columns or []) or any('perception_proteines' in r for r in raw),'recovered_layout_rows':sum(bool(r.get('_recovered_layout')) for r in raw)},'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':{'all':group_stats(rows),**{str(v):group_stats([r for r in rows if r['variant']==str(v)+' g']) for v in (16,48,36)}}}
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('input',type=Path);p.add_argument('--output',type=Path,default=Path(__file__).resolve().parents[1]/'data/questionnaire.json');a=p.parse_args()
  s=a.input.read_text(encoding='utf-8-sig');delimiter='\t' if '\t' in s.splitlines()[0] else ';' if ';' in s.splitlines()[0] else ','
- reader=csv.DictReader(s.splitlines(),delimiter=delimiter)
- if not {'variant_grams',*PRICE_KEYS,'intention_achat'}<=set(reader.fieldnames or []):raise SystemExit('Colonnes manquantes : utiliser l’export de l’onglet Réponses, sans renommer les en-têtes.')
- raw=[r for r in reader if any(str(v or '').strip() for v in r.values())];data=build(raw,reader.fieldnames);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n');print(f"Statistiques agrégées générées : {data['groups']['all']['n']} réponses. Aucun enregistrement individuel exporté.")
+ values=list(csv.reader(s.splitlines(),delimiter=delimiter));raw=rows_from_values(values);data=build(raw,values[0]);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n');print(f"Statistiques agrégées générées : {data['groups']['all']['n']} réponses. Aucun enregistrement individuel exporté.")
 if __name__=='__main__':main()
