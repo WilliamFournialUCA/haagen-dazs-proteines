@@ -1,5 +1,5 @@
 """Build public aggregate statistics from a local CSV/TSV export. Never copy raw responses."""
-import argparse,bisect,csv,json,math
+import argparse,bisect,csv,json,math,re,unicodedata
 from collections import Counter
 from datetime import datetime,timezone
 from pathlib import Path
@@ -34,14 +34,42 @@ CURRENT_COLUMNS = LEGACY_COLUMNS[:2]+['variant_condition']+LEGACY_COLUMNS[2:-1]+
 REQUIRED = set(LEGACY_COLUMNS)-{'submitted_at'}
 OPTIONAL = {'perception_proteines'}
 
+def header_key(value):
+ text=unicodedata.normalize('NFKD',str(value).strip())
+ text=''.join(c for c in text if not unicodedata.combining(c))
+ return re.sub(r'[^a-z0-9]','',text.lower())
+
+HEADER_NAMES={header_key(key):key for key in CURRENT_COLUMNS}
+HEADER_NAMES.update({header_key(label):key for label,key in {
+ 'Date et Heure':'submitted_at',
+ 'Variante':'variant_grams',
+ 'Variante du grammage':'variant_condition',
+ 'Activité physique':'sport',
+ 'Fréquence consommation glaces':'frequence_glaces',
+ 'Consommation produits protéinés':'proteines_habitude',
+ 'Prix_doute':'prix_trop_bas',
+ 'Prix_cher_envisageable':'prix_cher',
+ 'Protéines retenues':'retenu_proteines',
+ 'Nombre de protéines saisi':'protein_grams',
+ 'Valeur protéinée forte':'perception_proteines',
+ 'Achat_produit':'intention_achat',
+}.items()})
+
+def canonical_header(value):
+ # Explicit aliases only: accents, spaces, punctuation and case are harmless.
+ # Unknown names stay unknown; duplicate aliases must never overwrite values.
+ return HEADER_NAMES.get(header_key(value),str(value).strip())
+
 def rows_from_values(values):
  """Allow aligned exports and the verified new payload under old headers only."""
  if not isinstance(values,list) or not values or not isinstance(values[0],list):
   raise ValueError('En-têtes absents : aucune donnée publiée.')
- headers=[str(v).strip() for v in values[0]]
+ headers=[canonical_header(v) for v in values[0]]
  named=[h for h in headers if h]
- if len(named)!=len(set(named)) or not REQUIRED<=set(named):
-  raise ValueError('Colonnes manquantes ou dupliquées : aucune donnée publiée.')
+ if len(named)!=len(set(named)):
+  raise ValueError('Colonnes dupliquées après correspondance des en-têtes : aucune donnée publiée.')
+ if not REQUIRED<=set(named):
+  raise ValueError('Colonnes manquantes : '+', '.join(sorted(REQUIRED-set(named)))+'. Aucune donnée publiée.')
  legacy=headers[:len(LEGACY_COLUMNS)]==LEGACY_COLUMNS and not any(headers[len(LEGACY_COLUMNS):])
  rows=[]
  for cells in values[1:]:
@@ -130,6 +158,7 @@ def group_stats(rows):
    cross[x+'|'+y]={'n':sum(count.values()),'rows':xs,'columns':ys,'counts':[[count[a,z] for z in ys] for a in xs]}
  return {'n':n,'distributions':distributions,'prices':price,'purchase':purchase,'memory':memory,'cross':cross}
 def build(raw,source_columns=None):
+ if source_columns is not None:source_columns=[canonical_header(v) for v in source_columns]
  rows=[clean(r) for r in raw];invalid=sum(r is None for r in rows);rows=[r for r in rows if r is not None]
  return {'schema_version':2,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False,'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r}),'perception_data_available':'perception_proteines' in (source_columns or []) or any('perception_proteines' in r for r in raw),'recovered_layout_rows':sum(bool(r.get('_recovered_layout')) for r in raw)},'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':{'all':group_stats(rows),**{str(v):group_stats([r for r in rows if r['variant']==str(v)+' g']) for v in (16,48,36)}}}
 def main():

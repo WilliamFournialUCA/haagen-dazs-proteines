@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_questionnaire_data import build, LEGACY_COLUMNS, CURRENT_COLUMNS
+from build_questionnaire_data import build, LEGACY_COLUMNS, CURRENT_COLUMNS, canonical_header
 from sync_questionnaire import REQUIRED, rows_from_values, save_aggregates
 
 
@@ -88,6 +88,36 @@ class QuestionnaireDataTests(unittest.TestCase):
         for cells in [[16]*21, ['',16,'16 g de protéines et réduit en sucre']+['']*17]:
             with self.assertRaises(ValueError):
                 rows_from_values([LEGACY_COLUMNS, cells])
+
+    def test_french_sheet_headers_preserve_all_answers(self):
+        headers = ['Date et Heure','Variante','Variante du grammage','genre','Âge ',
+                   'CSP','Activité physique','Culpabilité','Fréquence consommation glaces',
+                   'Consommation produits protéinés','Prix_doute','Prix_bonne_affaire',
+                   'Prix_cher_envisageable','Prix_trop_cher','Achat_4,99','Achat_549',
+                   'Achat_5,99','Protéines retenues','Nombre de protéines saisi',
+                   'Valeur protéinée forte','Achat_produit']
+        self.assertEqual([canonical_header(h) for h in headers], CURRENT_COLUMNS)
+        new = row(48, "5 - Tout à fait d'accord")
+        new.update(genre='Une femme', sport='Plusieurs fois par semaine',
+                   achat_499='Très élevée', achat_549='Élevée', achat_599='Faible')
+        cells = [new.get(k,'') for k in CURRENT_COLUMNS]
+        english = build(rows_from_values([CURRENT_COLUMNS,cells]),CURRENT_COLUMNS)
+        french = build(rows_from_values([headers,cells]),headers)
+        self.assertEqual(french['groups'], english['groups'])
+        self.assertEqual(french['quality'], english['quality'])
+        self.assertTrue(french['quality']['perception_column_present'])
+
+    def test_header_accents_spacing_and_price_commas(self):
+        self.assertEqual(canonical_header('  ACTIVITE PHYSIQUE  '),'sport')
+        self.assertEqual(canonical_header('Achat_4,99'),'achat_499')
+        self.assertEqual(canonical_header('prix-bonne-affaire'),'prix_bonne_affaire')
+        self.assertEqual(canonical_header('unknown'),'unknown')
+
+    def test_duplicate_aliases_remain_an_error(self):
+        with self.assertRaisesRegex(ValueError,'dupliquées'):
+            rows_from_values([CURRENT_COLUMNS+['Âge '], [48]*22])
+        with self.assertRaisesRegex(ValueError,'Colonnes manquantes'):
+            rows_from_values([['Variante'],[48]])
 
     def test_sync_idempotency_and_last_good_snapshot(self):
         headers = sorted(REQUIRED) + ['perception_proteines']

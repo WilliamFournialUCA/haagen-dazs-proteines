@@ -56,3 +56,7 @@ Nouvelle colonne facultative, nécessaire à l’analyse de perception : `percep
 La colonne d’horodatage peut être présente mais n’est pas publiée. Les noms, adresses ou autres nouvelles colonnes éventuelles ne sont pas repris.
 
 Les comparaisons et interprétations sont descriptives. L’analyse du prix utilise les quadruplets complets, non négatifs et ordonnés. Le point d’égal rejet n’est publié qu’à partir de 30 quadruplets cohérents : seuil éditorial de prudence, sans garantie statistique. Les courbes emploient une interpolation linéaire entre les seuils observés ; l’intersection n’optimise ni profit ni ventes.
+
+## En-têtes français du Sheet
+
+Le lecteur accepte les noms techniques et les libellés français observés le 22 octobre 2026 : Date et Heure, Variante, Variante du grammage, Activité physique, Fréquence consommation glaces, Consommation produits protéinés, Prix_doute, Prix_cher_envisageable, Protéines retenues, Nombre de protéines saisi, Valeur protéinée forte et Achat_produit. Les accents, espaces, majuscules et séparateurs dans les noms des colonnes sont normalisés ; Achat_4,99 correspond ainsi à achat_499. La correspondance est explicite, sans rapprochement approximatif. Deux colonnes désignant la même variable sont refusées pour éviter d’écraser des réponses. Cette compatibilité ne modifie pas les valeurs du Sheet.
