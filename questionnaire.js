@@ -31,12 +31,37 @@ function curves(g){
  const labels=node('div',undefined,'curve-legend');[['Trop bas','#711b36'],['Bonne affaire','#b28b51'],['Cher','#568373'],['Trop cher','#7b719e']].forEach(([label,c])=>{const e=node('span',label);e.style.borderColor=c;labels.append(e);});root.append(labels);
  const details=node('details'),sum=node('summary','Voir les valeurs du graphique');details.append(sum);const wrap=node('div',undefined,'table-wrap'),t=node('table');let tr=node('tr');for(const h of ['Prix TTC','Trop bas','Bonne affaire','Cher','Trop cher']){const th=node('th',h);th.scope='col';tr.append(th);}const head=node('thead');head.append(tr);t.append(head);const body=node('tbody');for(const c of p.curves){tr=node('tr');cell(tr,linked(euro(c.price)),true);for(const k of ['too_cheap','bargain','expensive','too_expensive'])cell(tr,linked(fmt(c[k])+' %'));body.append(tr);}t.append(body);wrap.append(t);details.append(wrap);root.append(details);
 }
-function crossing(g){
- const x=$('cross-x').value,y=$('cross-y').value;
- if(x===y){clear('cross-table').append(node('p','Choisir deux variables différentes.'));$('cross-note').textContent='';return;}
- const c=g.cross[x+'|'+y];if(!c.n){clear('cross-table').append(node('p','Aucune réponse renseignée pour ces deux variables dans la sélection.'));$('cross-note').textContent='';return;}
- table('cross-table',[data.variables[x].label+' × '+data.variables[y].label,...c.columns.map(l=>pretty(y,l)),'Total ligne'],c.rows.map((label,i)=>{const total=c.counts[i].reduce((a,b)=>a+b,0);return[pretty(x,label),...c.counts[i].map(v=>linked(v+' · '+pct(v,total))),linked(String(total))];}));
- $('cross-note').textContent='Base complète pour ce croisement : '+c.n+' réponse(s). Pourcentages calculés dans chaque ligne, pas sur le total général. '+(g.n-c.n)+' réponse(s) exclue(s) pour valeur manquante. Croisement descriptif : aucune causalité ou significativité n’est démontrée.';
+function crossing(){
+ const root=clear('cross-table'),x=$('cross-x').value,y=$('cross-y').value,z=$('cross-z').value;
+ const versions=$('cross-version').value==='both'?['16','48']:[$('cross-version').value];
+ let views;
+ try{views=versions.map(version=>({version,...QuestionnaireCrossModel.project(data,version,x,y,z)}));}
+ catch(error){root.append(node('p',error.message==='distinct'?'Choisissez des variables différentes dans les trois menus.':'Les tableaux à trois variables sont en préparation. Ils apparaîtront avec le prochain instantané publié.'));$('cross-note').textContent='';return;}
+ const facets=z?data.variables[z].options.map((label,i)=>i).filter(i=>views.some(view=>view.cells.some(c=>c[2]===i))):[0];
+ if(!facets.length){root.append(node('p','Aucune réponse renseignée pour ces trois variables dans les versions sélectionnées.'));}
+ for(const facet of facets){
+  const section=node('div',undefined,'cross-facet');
+  if(z)section.append(node('h3',data.variables[z].label+' : '+pretty(z,data.variables[z].options[facet])));
+  const panel=node('div',undefined,versions.length===2?'cross-version-grid':'cross-single-grid');
+  const xs=[...new Set(views.flatMap(v=>v.cells.filter(c=>c[2]===facet).map(c=>c[0])))].sort((a,b)=>a-b);
+  const ys=[...new Set(views.flatMap(v=>v.cells.filter(c=>c[2]===facet).map(c=>c[1])))].sort((a,b)=>a-b);
+  for(const view of views){
+   const card=node('article',undefined,'card'),heading=node(z?'h4':'h3','Concept '+view.version+' g');card.append(heading);
+   const cells=view.cells.filter(c=>c[2]===facet),n=cells.reduce((sum,c)=>sum+c[3],0),base=node('p',undefined,'label');
+   base.append(linked('Base de ce tableau : '+n+' réponse(s)'+(z?' · base complète des trois variables : '+view.n:'')));card.append(base);
+   if(!n){card.append(node('p','Aucune réponse complète dans ce tableau pour cette version.'));panel.append(card);continue;}
+   const counts=new Map(cells.map(c=>[c[0]+'|'+c[1],c[3]]));
+   const wrap=node('div',undefined,'table-wrap'),t=node('table');t.append(node('caption',data.variables[x].label+' en lignes × '+data.variables[y].label+' en colonnes'+(z?' · '+pretty(z,data.variables[z].options[facet]):'')+' · '+view.version+' g. Effectif et % de chaque ligne.'));
+   const head=node('thead'),headrow=node('tr');[data.variables[x].label+' ↓ / '+data.variables[y].label+' →',...ys.map(j=>pretty(y,data.variables[y].options[j])),'Total ligne'].forEach(label=>{const th=node('th',label);th.scope='col';headrow.append(th);});head.append(headrow);t.append(head);
+   const body=node('tbody');
+   for(const i of xs){const tr=node('tr'),total=ys.reduce((sum,j)=>sum+(counts.get(i+'|'+j)||0),0);cell(tr,pretty(x,data.variables[x].options[i]),true);for(const j of ys){const count=counts.get(i+'|'+j)||0;cell(tr,linked(count+' · '+pct(count,total)));}cell(tr,linked(String(total)));body.append(tr);}
+   const totalrow=node('tr');cell(totalrow,'Total valide',true);ys.forEach(j=>cell(totalrow,linked(String(xs.reduce((sum,i)=>sum+(counts.get(i+'|'+j)||0),0)))));cell(totalrow,linked(String(n)));body.append(totalrow);t.append(body);wrap.append(t);card.append(wrap);panel.append(card);
+  }
+  section.append(panel);root.append(section);
+ }
+ const note=$('cross-note');note.replaceChildren();
+ views.forEach((view,i)=>{if(i)note.append(node('br'));note.append(linked('Concept '+view.version+' g : '+view.n+' réponse(s) complète(s) sur '+view.total+' retenue(s) ; '+view.missing+' non utilisée(s) pour valeur manquante dans ce croisement.'));});
+ note.append(node('br'),'Les deux versions sont décrites séparément ; les pourcentages ne mesurent pas leur différence statistique.');
 }
 function interpretations(g){
  const list=clear('interpretations');
@@ -83,7 +108,7 @@ function render(){
  table('version-comparison',['Version','Effectif','Bonne affaire médiane','Intention favorable','Mémorisation exacte*','Perçue riche en protéines'],['16','48',...(data.groups['36'].n?['36']:[])].map(v=>{const z=data.groups[v],d=z.distributions.intention_achat,t=d.counts.slice(-2).reduce((s,c)=>s+c.count,0);const perception=z.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);return[v==='36'?'36 g · ancien concept':v+' g',linked(String(z.n)),linked(euro(z.prices.medians[1])),linked(pct(t,d.n)+' (n='+d.n+')'),linked(pct(z.memory.correct,z.memory.numeric)+' (n='+z.memory.numeric+')'),linked(pct(agree,perception.n)+' (n='+perception.n+')')];}));
  const perception=g.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);$('perception-status').textContent=data.quality.perception_data_available?'Nouvelle question : '+perception.n+' réponse(s) renseignée(s) dans la sélection ; '+perception.missing+' valeur(s) absente(s). Les questionnaires antérieurs peuvent ne pas comporter cette question.':'La question est présente dans le questionnaire actuel, mais la colonne perception_proteines n’est pas encore transmise dans le Google Sheet. Les résultats apparaîtront dès son enregistrement dans le fichier source.';table('perception-summary',['Indicateur','Valeur'],[['D’accord ou tout à fait d’accord',linked(agree+' / '+perception.n+' · '+pct(agree,perception.n))],['Base renseignée',linked(String(perception.n))],['Valeur absente',linked(String(perception.missing))]]);
  const m=g.memory;table('memory-summary',['Indicateur','Valeur'],[['Déclare avoir retenu',linked(m.said_yes+' / '+g.distributions.retenu_proteines.n+' · '+pct(m.said_yes,g.distributions.retenu_proteines.n))],['Saisit un nombre après « Oui »',linked(m.numeric+' / '+m.said_yes)],['Nombre exact parmi les réponses numériques',linked(m.correct+' / '+m.numeric+' · '+pct(m.correct,m.numeric))]]);
- crossing(g);interpretations(g);renderQuality();
+ crossing();interpretations(g);renderQuality();
 }
 QuestionnaireLive.subscribe(d=>{
  if(d.schema_version!==3||!d.groups?.all)throw Error('Format non reconnu');
@@ -92,8 +117,8 @@ QuestionnaireLive.subscribe(d=>{
  $('variant-filter').querySelector('option[value="36"]').hidden=!data.groups['36'].n;
  if(selected==='36'&&!data.groups['36'].n){selected='all';$('variant-filter').value='all';}
  if(initial){
-  for(const id of ['cross-x','cross-y']){const s=$(id);for(const[k,v]of Object.entries(data.variables)){const o=node('option',v.label);o.value=k;s.append(o);}}$('cross-x').value='sport';$('cross-y').value='intention_achat';
-  $('variant-filter').addEventListener('change',e=>{selected=e.target.value;render();});$('cross-x').addEventListener('change',()=>crossing(data.groups[selected]));$('cross-y').addEventListener('change',()=>crossing(data.groups[selected]));
+  for(const id of ['cross-x','cross-y','cross-z']){const s=$(id);for(const[k,v]of Object.entries(data.variables)){if(k==='variant')continue;const o=node('option',v.label);o.value=k;s.append(o);}}$('cross-x').value='sport';$('cross-y').value='intention_achat';
+  $('variant-filter').addEventListener('change',e=>{selected=e.target.value;render();});for(const id of ['cross-version','cross-x','cross-y','cross-z'])$(id).addEventListener('change',crossing);
  }
  $('loading').hidden=true;$('survey-dashboard').hidden=false;render();
 },(error,hasData)=>{$('loading').hidden=false;$('loading').textContent=hasData?'Actualisation temporairement indisponible : le dernier instantané affiché est conservé.':'Les statistiques ne sont pas disponibles. Consultez le fichier source ou réessayez plus tard. Aucun résultat de remplacement n’est inventé.';});

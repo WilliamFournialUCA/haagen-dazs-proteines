@@ -64,3 +64,34 @@ Le lecteur accepte les noms techniques et les libellés français observés le 2
 ## Contrôle qualité du 4 novembre 2026
 
 La synchronisation applique désormais le [protocole de qualité et d’exclusion](controle-qualite-questionnaire.md), avec une variable `exclure_analyse` séparée du Sheet et le registre `config/questionnaire-quality.json`. Les seuls indicateurs signalés ne provoquent pas d’exclusion. La lecture des formats des colonnes de prix restitue les décimales converties en dates `d.m`, sans modifier la source. Le JSON publie le bilan et des comparaisons avant/après, mais aucune ligne individuelle. HTML, JavaScript et JSON version 3 doivent être publiés ensemble.
+
+
+## Partie 7 : comparer les versions et croiser trois variables
+
+Le sélecteur local `cross-version` permet 16 g, 48 g ou une comparaison côte à côte.
+Il concerne seulement la partie 7 et ne dépend pas du filtre général de la page.
+`variant` n'est plus une variable proposée dans les menus en lignes/colonnes.
+Le troisième menu `cross-z` est facultatif : ses modalités répartissent les tableaux
+lignes × colonnes. Les variables doivent être distinctes. Les deux versions partagent
+les mêmes axes et modalités affichées pour permettre une lecture comparable.
+
+Le calcul conserve la base retenue de la page Questionnaire, sans appliquer les
+retraits supplémentaires de cohérence des prix de la page Analyse. L'ancien concept
+36 g ne fait pas partie de la comparaison actuelle. Les valeurs manquantes sont
+écartées localement : un croisement triple utilise les réponses complètes aux trois
+variables, pas une estimation à partir de tableaux bivariés. Les effectifs exacts,
+la base par version et le nombre de valeurs manquantes sont affichés.
+
+`scripts/questionnaire_threeway.py` prépare les 286 combinaisons de trois variables
+catégorielles (13 variables hors version), séparément pour 16 g et 48 g, en tableaux
+agrégés creux. `three_way` est ajouté au même instantané principal, donc actualisé
+par le workflow existant. Aucun identifiant, âge exact, horodatage ni vecteur de
+réponses individuel n'est ajouté à la publication. Les petits effectifs restent
+visibles selon la convention déjà utilisée dans cette partie : ils ne permettent
+aucune généralisation. Les prix libres restent hors des croisements catégoriels.
+
+`questionnaire-cross-model.js` projette ces tableaux dans n'importe quel ordre des
+axes ; ses six permutations sont testées. Les pourcentages ont pour dénominateur
+chaque ligne, au sein de la version et, si choisie, de la modalité de la troisième
+variable. Une ligne vide a un pourcentage non calculable, pas 0 %. Les totaux de
+colonnes et de lignes sont en effectifs. Les menus persistent à la synchronisation.
