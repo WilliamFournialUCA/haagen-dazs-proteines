@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "policy_date": "2026-11-04",
+  "review_age_min": 90,
+  "review_price_above": 100,
+  "manual_exclusions": {
+    "97effc73ec69214c269d99780239f5aee738346eb9025eb0970599b996a64276": {
+      "reason": "manual_report",
+      "decision_date": "2026-11-04",
+      "basis": "Signalement explicite de l’équipe ; décision après collecte, sans généralisation aux autres profils."
+    }
+  }
+}

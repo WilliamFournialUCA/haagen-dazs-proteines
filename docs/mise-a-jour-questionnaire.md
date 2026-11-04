@@ -45,7 +45,7 @@ Au contrôle initial, la collecte utilisait encore les 19 anciens en-têtes, mai
 
 Le lecteur automatique couvre désormais l’onglet entier (au lieu de s’arrêter à la colonne S), et sélectionne uniquement les champs autorisés en mémoire. La nouvelle colonne peut ainsi être ajoutée à droite ou déplacée sans modifier le lecteur. Les colonnes personnelles ou inconnues restent exclues des agrégats. Un en-tête vide n’est pas une variable ; les doublons d’en-têtes non vides restent refusés.
 
-Vérification locale : `python -m unittest discover -s tests -v`. Le format des statistiques est désormais `schema_version: 2` et les fichiers HTML, JavaScript et JSON doivent être publiés ensemble.
+Vérification locale : `python -m unittest discover -s tests -v`. Le format des statistiques est désormais `schema_version: 3` et les fichiers HTML, JavaScript et JSON doivent être publiés ensemble.
 
 ## Colonnes attendues
 
@@ -60,3 +60,7 @@ Les comparaisons et interprétations sont descriptives. L’analyse du prix util
 ## En-têtes français du Sheet
 
 Le lecteur accepte les noms techniques et les libellés français observés le 22 octobre 2026 : Date et Heure, Variante, Variante du grammage, Activité physique, Fréquence consommation glaces, Consommation produits protéinés, Prix_doute, Prix_cher_envisageable, Protéines retenues, Nombre de protéines saisi, Valeur protéinée forte et Achat_produit. Les accents, espaces, majuscules et séparateurs dans les noms des colonnes sont normalisés ; Achat_4,99 correspond ainsi à achat_499. La correspondance est explicite, sans rapprochement approximatif. Deux colonnes désignant la même variable sont refusées pour éviter d’écraser des réponses. Cette compatibilité ne modifie pas les valeurs du Sheet.
+
+## Contrôle qualité du 4 novembre 2026
+
+La synchronisation applique désormais le [protocole de qualité et d’exclusion](controle-qualite-questionnaire.md), avec une variable `exclure_analyse` séparée du Sheet et le registre `config/questionnaire-quality.json`. Les seuls indicateurs signalés ne provoquent pas d’exclusion. La lecture des formats des colonnes de prix restitue les décimales converties en dates `d.m`, sans modifier la source. Le JSON publie le bilan et des comparaisons avant/après, mais aucune ligne individuelle. HTML, JavaScript et JSON version 3 doivent être publiés ensemble.

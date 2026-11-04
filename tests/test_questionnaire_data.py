@@ -22,7 +22,7 @@ def row(grams, perception=None):
 class QuestionnaireDataTests(unittest.TestCase):
     def test_variants_are_not_merged_and_recall_uses_assigned_grams(self):
         d = build([row(16), row(36), row(48)])
-        self.assertEqual(d['schema_version'], 2)
+        self.assertEqual(d['schema_version'], 3)
         self.assertEqual(d['groups']['all']['n'], 3)
         for variant in ('16', '36', '48'):
             self.assertEqual(d['groups'][variant]['n'], 1)

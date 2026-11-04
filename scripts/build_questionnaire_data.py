@@ -3,6 +3,7 @@ import argparse,bisect,csv,json,math,re,unicodedata
 from collections import Counter
 from datetime import datetime,timezone
 from pathlib import Path
+from questionnaire_quality import screen_records, quality_counts, load_policy
 SOURCE='https://docs.google.com/spreadsheets/d/1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y/edit?usp=sharing'
 LABELS={
  'variant':('Version présentée',['16 g','48 g','36 g']),
@@ -91,6 +92,8 @@ def rows_from_values(values):
     raise ValueError('Structure de ligne invalide : cellules sans en-tête reconnu.')
    layout=headers
   row={key:cells[i] if i<len(cells) else '' for i,key in enumerate(layout) if key in REQUIRED|OPTIONAL}
+  if 'submitted_at' in layout:
+   row['_submitted_at']=cells[layout.index('submitted_at')] if layout.index('submitted_at')<len(cells) else ''
   if recovered:row['_recovered_layout']=True
   rows.append(row)
  return rows
@@ -157,10 +160,36 @@ def group_stats(rows):
    xs=[v for v in xo if any(a==v for a,_ in count)];ys=[v for v in yo if any(z==v for _,z in count)]
    cross[x+'|'+y]={'n':sum(count.values()),'rows':xs,'columns':ys,'counts':[[count[a,z] for z in ys] for a in xs]}
  return {'n':n,'distributions':distributions,'prices':price,'purchase':purchase,'memory':memory,'cross':cross}
-def build(raw,source_columns=None):
+def build(raw,source_columns=None,quality_policy=None,restored_price_cells=0):
  if source_columns is not None:source_columns=[canonical_header(v) for v in source_columns]
- rows=[clean(r) for r in raw];invalid=sum(r is None for r in rows);rows=[r for r in rows if r is not None]
- return {'schema_version':2,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False,'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r}),'perception_data_available':'perception_proteines' in (source_columns or []) or any('perception_proteines' in r for r in raw),'recovered_layout_rows':sum(bool(r.get('_recovered_layout')) for r in raw)},'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':{'all':group_stats(rows),**{str(v):group_stats([r for r in rows if r['variant']==str(v)+' g']) for v in (16,48,36)}}}
+ cleaned=[clean(r) for r in raw]
+ invalid=sum(r is None for r in cleaned)
+ if invalid:raise ValueError('Version de questionnaire inconnue : vérifier le Sheet avant publication.')
+ policy=load_policy() if quality_policy is None else quality_policy
+ decisions=screen_records(raw,cleaned,policy)
+ rows=[r for r,d in zip(cleaned,decisions) if r is not None and not d['exclure_analyse']]
+ all_rows=[r for r in cleaned if r is not None]
+ def make_groups(records):
+  return {'all':group_stats(records),**{str(v):group_stats([r for r in records if r['variant']==str(v)+' g']) for v in (16,48,36)}}
+ groups=make_groups(rows)
+ # Sensitivity summaries do not publish excluded individual answers/cross-tabs.
+ def summary(records):
+  z=group_stats(records);dist=z['distributions']['intention_achat']
+  return {'n':z['n'],'intention_n':dist['n'],'intention_top2':sum(c['count'] for c in dist['counts'][-2:]),
+          'price_n':z['prices']['n'],'bargain_median':z['prices']['medians'][1]}
+ audit=quality_counts(decisions)
+ audit.update({'variable':'exclure_analyse','version':policy['version'],'policy_date':policy.get('policy_date','2026-11-04'),
+  'posthoc':True,'review_age_min':policy.get('review_age_min',90),'review_price_above':policy.get('review_price_above',100),
+  'restored_price_cells':restored_price_cells,
+  'sensitivity':{key:{'before':summary(all_rows if key=='all' else [r for r in all_rows if r['variant']==key+' g']),
+                      'after':summary(rows if key=='all' else [r for r in rows if r['variant']==key+' g'])} for key in groups}})
+ return {'schema_version':3,'updated_at':datetime.now(timezone.utc).isoformat(),'source_url':SOURCE,'manual_update':True,
+ 'quality':{'ignored_invalid_variant':invalid,'uniqueness_checked':False,
+ 'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r}),
+ 'perception_data_available':'perception_proteines' in (source_columns or []) or any('perception_proteines' in r for r in raw),
+ 'recovered_layout_rows':sum(bool(r.get('_recovered_layout')) for r in raw)},
+ 'quality_control':audit,'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':groups}
+
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('input',type=Path);p.add_argument('--output',type=Path,default=Path(__file__).resolve().parents[1]/'data/questionnaire.json');a=p.parse_args()
  s=a.input.read_text(encoding='utf-8-sig');delimiter='\t' if '\t' in s.splitlines()[0] else ';' if ';' in s.splitlines()[0] else ','

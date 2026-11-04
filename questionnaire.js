@@ -49,10 +49,27 @@ function interpretations(g){
  if(!a.n||!b.n)add('La comparaison actuelle 16 g / 48 g est impossible pour le moment : il manque des réponses dans au moins un groupe.');
  else{const x=a.distributions.intention_achat,y=b.distributions.intention_achat;if(x.n&&y.n){const nx=x.counts.slice(-2).reduce((s,c)=>s+c.count,0),ny=y.counts.slice(-2).reduce((s,c)=>s+c.count,0);const gap=100*ny/y.n-100*nx/x.n;add('Intention générale favorable : '+pct(nx,x.n)+' pour 16 g (n='+x.n+') et '+pct(ny,y.n)+' pour 48 g (n='+y.n+'). Écart absolu : '+fmt(Math.abs(gap))+' points'+(gap>0?' en faveur du concept 48 g':gap<0?' en faveur du concept 16 g':' : égalité descriptive')+'. Aucun effet statistiquement établi.');}}
  const perception=g.distributions.perception_proteines;if(perception.n){const agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);add('Glace perçue comme riche en protéines : '+pct(agree,perception.n)+' d’accord (scores 4 ou 5), sur '+perception.n+' réponse(s) à cette nouvelle question. Cette perception ne mesure pas la mémorisation du grammage.');}else add('La nouvelle question sur la richesse en protéines ne dispose pas encore de réponse exploitable dans cette sélection.');
- add('Les présentations visuelles des deux versions diffèrent : un écart éventuel ne peut pas être attribué au seul nombre de grammes. Les participations multiples et les abandons ne sont pas contrôlés dans cet export.');
+ add('Les présentations visuelles des deux versions diffèrent : un écart éventuel ne peut pas être attribué au seul nombre de grammes. Les participations multiples d’une même personne et les abandons ne sont pas vérifiables dans cet export.');
+}
+function renderQuality(){
+ const q=data.quality_control,root=clear('quality-status');
+ root.append('Base d’analyse globale : ',linked(String(q.retained)),' réponse(s) retenue(s) sur ',linked(String(q.received)),' collectée(s) ; ',linked(String(q.excluded)),' exclue(s). ');
+ const jump=node('a','Voir la méthode et les motifs en bas de page');jump.href='#qualite-reponses';root.append(jump);
+ table('quality-flow',['Indicateur · ensemble de la collecte','Effectif'],[
+  ['Enregistrements collectés',linked(String(q.received))],
+  ['exclure_analyse = oui · exclus',linked(String(q.excluded))],
+  ['exclure_analyse = non · retenus',linked(String(q.retained))],
+  ['Dont signalés à vérifier, mais conservés',linked(String(q.flagged_retained))]]);
+ table('quality-reasons',['Décision d’exclusion','Effectif'],q.reasons.map(r=>[r.label,linked(String(r.count))]));
+ table('quality-flags',['Signal parmi les réponses retenues','Effectif'],q.flags.map(r=>[r.label,linked(String(r.count))]));
+ $('quality-policy-date').textContent='Règles définies le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeZone:'Europe/Paris'}).format(new Date(q.policy_date+'T12:00:00Z'))+' · appliquées à chaque actualisation. Une ligne peut cumuler plusieurs signaux.';
+ $('price-format-restoration').replaceChildren(linked(String(q.restored_price_cells)),' cellule(s) de prix affichée(s) comme des décimales mais stockée(s) en dates par Google Sheets ont été restituées à leur valeur décimale dans le lecteur, sans modifier le Sheet. Seul le format de date d.m vérifié est pris en charge ; les autres formats ambigus bloquent la publication pour contrôle. Ces conversions techniques ne sont pas des signes de réponse fictive.');
+ const s=q.sensitivity[selected];$('sensitivity-base').textContent='Comparaison pour '+(selected==='all'?'l’ensemble des réponses':selected+' g')+' · prix lus de façon identique avant et après exclusion.';
+ table('quality-sensitivity',['Base','Effectif','Intention favorable · base renseignée','Bonne affaire médiane · base prix'],[['Avant exclusions globales',s.before],['Après exclusions globales',s.after]].map(([label,z])=>[label,linked(String(z.n)),linked(pct(z.intention_top2,z.intention_n)+' (n='+z.intention_n+')'),linked(euro(z.bargain_median)+' (n='+z.price_n+')')]));
+ $('qualite-reponses').hidden=false;
 }
 function render(){
- const g=data.groups[selected];$('selected-base').textContent='Sélection : '+(selected==='all'?'ensemble des réponses':selected+' g')+' · n = '+g.n;
+ const g=data.groups[selected];$('selected-base').textContent='Sélection : '+(selected==='all'?'réponses retenues, ensemble':selected+' g')+' · n = '+g.n;
  $('n-total').replaceChildren(linked(String(g.n)));$('n-price').replaceChildren(linked(g.prices.n+' / '+g.n));
  const d=g.distributions.intention_achat,top=d.counts.slice(-2).reduce((s,c)=>s+c.count,0);$('n-positive').replaceChildren(linked(pct(top,d.n)));$('positive-base').textContent=top+' sur '+d.n+' réponses renseignées · scores 4 ou 5.';
  $('sample-warning').textContent=g.n===0?'Aucune réponse pour cette sélection. Les graphiques restent vides.':g.n<30?'Collecte en cours : n = '+g.n+'. Un pourcentage élevé peut correspondre à une seule personne. Les croisements décrivent cet échantillon, sans permettre de conclure sur le marché.':'Lecture descriptive : recrutement et représentativité à documenter. Un grand effectif ne supprime pas les biais de sélection.';
@@ -66,10 +83,10 @@ function render(){
  table('version-comparison',['Version','Effectif','Bonne affaire médiane','Intention favorable','Mémorisation exacte*','Perçue riche en protéines'],['16','48',...(data.groups['36'].n?['36']:[])].map(v=>{const z=data.groups[v],d=z.distributions.intention_achat,t=d.counts.slice(-2).reduce((s,c)=>s+c.count,0);const perception=z.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);return[v==='36'?'36 g · ancien concept':v+' g',linked(String(z.n)),linked(euro(z.prices.medians[1])),linked(pct(t,d.n)+' (n='+d.n+')'),linked(pct(z.memory.correct,z.memory.numeric)+' (n='+z.memory.numeric+')'),linked(pct(agree,perception.n)+' (n='+perception.n+')')];}));
  const perception=g.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);$('perception-status').textContent=data.quality.perception_data_available?'Nouvelle question : '+perception.n+' réponse(s) renseignée(s) dans la sélection ; '+perception.missing+' valeur(s) absente(s). Les questionnaires antérieurs peuvent ne pas comporter cette question.':'La question est présente dans le questionnaire actuel, mais la colonne perception_proteines n’est pas encore transmise dans le Google Sheet. Les résultats apparaîtront dès son enregistrement dans le fichier source.';table('perception-summary',['Indicateur','Valeur'],[['D’accord ou tout à fait d’accord',linked(agree+' / '+perception.n+' · '+pct(agree,perception.n))],['Base renseignée',linked(String(perception.n))],['Valeur absente',linked(String(perception.missing))]]);
  const m=g.memory;table('memory-summary',['Indicateur','Valeur'],[['Déclare avoir retenu',linked(m.said_yes+' / '+g.distributions.retenu_proteines.n+' · '+pct(m.said_yes,g.distributions.retenu_proteines.n))],['Saisit un nombre après « Oui »',linked(m.numeric+' / '+m.said_yes)],['Nombre exact parmi les réponses numériques',linked(m.correct+' / '+m.numeric+' · '+pct(m.correct,m.numeric))]]);
- crossing(g);interpretations(g);
+ crossing(g);interpretations(g);renderQuality();
 }
 fetch('data/questionnaire.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();}).then(d=>{
- if(d.schema_version!==2||!d.groups?.all)throw Error('Format non reconnu');data=d;
+ if(d.schema_version!==3||!d.groups?.all)throw Error('Format non reconnu');data=d;
  const date=new Date(data.updated_at);$('snapshot-date').textContent='Données préparées le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(date)+(data.manual_update===false?' · synchronisation horaire ; date du dernier changement des statistiques.':' · instantané manuel.');
  $('variant-filter').querySelector('option[value="36"]').hidden=!data.groups['36'].n;
  for(const id of ['cross-x','cross-y']){const s=$(id);for(const[k,v]of Object.entries(data.variables)){const o=node('option',v.label);o.value=k;s.append(o);}}$('cross-x').value='sport';$('cross-y').value='intention_achat';

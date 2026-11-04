@@ -3,14 +3,15 @@ import json
 import os
 from pathlib import Path
 from urllib.parse import quote
-from build_questionnaire_data import build, rows_from_values, REQUIRED
+from build_questionnaire_data import build, rows_from_values, REQUIRED, PRICE_KEYS, canonical_header
+from questionnaire_price_formats import restore_price_dates, column_letter
 
 SHEET_ID = '1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y'
 OUTPUT = Path(__file__).resolve().parents[1] / 'data/questionnaire.json'
 
 
-def save_aggregates(values, output=OUTPUT):
-    data = build(rows_from_values(values), values[0])
+def save_aggregates(values, output=OUTPUT, restored_price_cells=0):
+    data = build(rows_from_values(values), values[0], restored_price_cells=restored_price_cells)
     if data['quality']['ignored_invalid_variant']:
         raise ValueError('Version de questionnaire inconnue : vérifier le Sheet avant publication.')
     data['manual_update'] = False
@@ -47,11 +48,22 @@ def main():
                 params={'valueRenderOption': 'UNFORMATTED_VALUE'}, timeout=60)
             if response.status_code != 200:
                 raise ValueError(f'Lecture Google Sheets refusée (HTTP {response.status_code}). Vérifier API activée et partage Lecteur.')
-            changed = save_aggregates(response.json().get('values'))
+            values = response.json().get('values')
+            # Read formats only for the price columns. No source cell is modified.
+            price_columns = [i for i,h in enumerate(values[0]) if canonical_header(h) in PRICE_KEYS] if values else []
+            restored_count = 0
+            if len(values or []) > 1 and price_columns:
+                ranges = ["'Réponses'!"+column_letter(c)+'2:'+column_letter(c)+str(len(values)) for c in price_columns]
+                metadata = session.get(f'https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}',
+                    params={'ranges':ranges, 'fields':'sheets(data(startRow,startColumn,rowData(values(formattedValue,effectiveFormat(numberFormat)))))'}, timeout=60)
+                if metadata.status_code != 200:
+                    raise ValueError(f'Lecture des formats Google Sheets refusée (HTTP {metadata.status_code}).')
+                values, restored_count = restore_price_dates(values, metadata.json().get('sheets', []), price_columns)
+            changed = save_aggregates(values, restored_price_cells=restored_count)
     except Exception as error:
         # Never log response bodies, credentials or participant records.
         if isinstance(error, ValueError) and not isinstance(error, json.JSONDecodeError):
-            message = str(error) if str(error).startswith(('En-têtes', 'Colonnes', 'Structure', 'Version', 'Configuration', 'Lecture')) else type(error).__name__
+            message = str(error) if str(error).startswith(('En-têtes', 'Colonnes', 'Structure', 'Version', 'Configuration', 'Lecture', 'Format')) else type(error).__name__
         else:
             message = type(error).__name__
         raise SystemExit(f'Échec de synchronisation : {message}. Dernières statistiques conservées.') from None
