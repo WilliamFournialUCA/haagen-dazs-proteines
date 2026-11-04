@@ -25,8 +25,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Installer le client Google
-        run: python -m pip install 'google-auth[requests]>=2.38,<3'
+      - name: Installer le client Google et le calcul statistique
+        run: python -m pip install -r requirements-questionnaire.txt
+      - name: Vérifier le calcul des statistiques
+        run: python -m unittest discover -s tests
       - name: Lire le Sheet privé et calculer les statistiques
         env:
           GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}

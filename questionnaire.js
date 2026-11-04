@@ -85,12 +85,17 @@ function render(){
  const m=g.memory;table('memory-summary',['Indicateur','Valeur'],[['Déclare avoir retenu',linked(m.said_yes+' / '+g.distributions.retenu_proteines.n+' · '+pct(m.said_yes,g.distributions.retenu_proteines.n))],['Saisit un nombre après « Oui »',linked(m.numeric+' / '+m.said_yes)],['Nombre exact parmi les réponses numériques',linked(m.correct+' / '+m.numeric+' · '+pct(m.correct,m.numeric))]]);
  crossing(g);interpretations(g);renderQuality();
 }
-fetch('data/questionnaire.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();}).then(d=>{
- if(d.schema_version!==3||!d.groups?.all)throw Error('Format non reconnu');data=d;
+QuestionnaireLive.subscribe(d=>{
+ if(d.schema_version!==3||!d.groups?.all)throw Error('Format non reconnu');
+ const initial=!data;data=d;
  const date=new Date(data.updated_at);$('snapshot-date').textContent='Données préparées le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(date)+(data.manual_update===false?' · synchronisation horaire ; date du dernier changement des statistiques.':' · instantané manuel.');
  $('variant-filter').querySelector('option[value="36"]').hidden=!data.groups['36'].n;
- for(const id of ['cross-x','cross-y']){const s=$(id);for(const[k,v]of Object.entries(data.variables)){const o=node('option',v.label);o.value=k;s.append(o);}}$('cross-x').value='sport';$('cross-y').value='intention_achat';
- $('variant-filter').addEventListener('change',e=>{selected=e.target.value;render();});$('cross-x').addEventListener('change',()=>crossing(data.groups[selected]));$('cross-y').addEventListener('change',()=>crossing(data.groups[selected]));
+ if(selected==='36'&&!data.groups['36'].n){selected='all';$('variant-filter').value='all';}
+ if(initial){
+  for(const id of ['cross-x','cross-y']){const s=$(id);for(const[k,v]of Object.entries(data.variables)){const o=node('option',v.label);o.value=k;s.append(o);}}$('cross-x').value='sport';$('cross-y').value='intention_achat';
+  $('variant-filter').addEventListener('change',e=>{selected=e.target.value;render();});$('cross-x').addEventListener('change',()=>crossing(data.groups[selected]));$('cross-y').addEventListener('change',()=>crossing(data.groups[selected]));
+ }
  $('loading').hidden=true;$('survey-dashboard').hidden=false;render();
-}).catch(()=>{$('loading').textContent='Les statistiques ne sont pas disponibles. Consultez le fichier source ou réessayez plus tard. Aucun résultat de remplacement n’est inventé.';});
+},(error,hasData)=>{$('loading').hidden=false;$('loading').textContent=hasData?'Actualisation temporairement indisponible : le dernier instantané affiché est conservé.':'Les statistiques ne sont pas disponibles. Consultez le fichier source ou réessayez plus tard. Aucun résultat de remplacement n’est inventé.';});
+document.addEventListener('questionnaire:healthy',()=>{if(data)$('loading').hidden=true;});
 })();
