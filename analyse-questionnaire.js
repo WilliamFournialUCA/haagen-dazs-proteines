@@ -102,7 +102,7 @@ function prices(){
  }else phrase('analysis-vw-chart','Aucun quadruplet de prix exploitable.');
  table('analysis-vw-points',['Base','PMC · bas','OPP · égal rejet','IPP · indifférence','PME · haut'],[[link(p.price_n+' quadruplets'),...['PMC','OPP','IPP','PME'].map(k=>link(range(p.points[k])))]]);
  const pmc=p.points.PMC,pme=p.points.PME;
- if(pmc&&pme&&pmc.high<=pme.low)$( 'analysis-vw-points').append(link('Zone descriptive : '+range(pmc)+' à '+range(pme)+'.'));
+ if(pmc&&pme&&pmc.high<=pme.low)$( 'analysis-vw-points').append(link('Zone descriptive — borne basse (PMC) : '+range(pmc)+' ; borne haute (PME) : '+range(pme)+'.'));
  table('analysis-gg',['Prix public TTC','Favorable / base commune','Taux favorable','Prix × taux · TTC'],p.gg.map(r=>[link(euro(r.price)),link(r.yes+' / '+r.n),link(pct(r.yes,r.n)),link(euro(r.revenue_proxy))]));
  const add=svgPlot('analysis-gg-chart','Proportion de réponses favorables aux trois prix ; même base à chaque prix.',900,240);
  const y=v=>180-v*135;
