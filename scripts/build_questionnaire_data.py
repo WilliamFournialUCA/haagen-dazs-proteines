@@ -5,6 +5,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 from questionnaire_quality import screen_records, quality_counts, load_policy
 from questionnaire_analysis import build_analysis
+from questionnaire_export import write_snapshot
 SOURCE='https://docs.google.com/spreadsheets/d/1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y/edit?usp=sharing'
 LABELS={
  'variant':('Version présentée',['16 g','48 g','36 g']),
@@ -189,10 +190,10 @@ def build(raw,source_columns=None,quality_policy=None,restored_price_cells=0):
  'perception_column_present':'perception_proteines' in (source_columns if source_columns is not None else {k for r in raw for k in r}),
  'perception_data_available':'perception_proteines' in (source_columns or []) or any('perception_proteines' in r for r in raw),
  'recovered_layout_rows':sum(bool(r.get('_recovered_layout')) for r in raw)},
- 'quality_control':audit,'analysis':build_analysis(rows,group_stats),'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':groups}
+ 'quality_control':audit,'analysis':build_analysis(rows,group_stats,LABELS),'variables':{k:{'label':v[0],'options':v[1]} for k,v in LABELS.items()},'groups':groups}
 
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('input',type=Path);p.add_argument('--output',type=Path,default=Path(__file__).resolve().parents[1]/'data/questionnaire.json');a=p.parse_args()
  s=a.input.read_text(encoding='utf-8-sig');delimiter='\t' if '\t' in s.splitlines()[0] else ';' if ';' in s.splitlines()[0] else ','
- values=list(csv.reader(s.splitlines(),delimiter=delimiter));raw=rows_from_values(values);data=build(raw,values[0]);a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n');print(f"Statistiques agrégées générées : {data['groups']['all']['n']} réponses. Aucun enregistrement individuel exporté.")
+ values=list(csv.reader(s.splitlines(),delimiter=delimiter));raw=rows_from_values(values);data=build(raw,values[0]);write_snapshot(data,a.output);print(f"Statistiques agrégées générées : {data['groups']['all']['n']} réponses. Aucun enregistrement individuel exporté.")
 if __name__=='__main__':main()

@@ -35,10 +35,10 @@ jobs:
         run: python scripts/sync_questionnaire.py
       - name: Enregistrer uniquement les agrégats modifiés
         run: |
-          if ! git diff --quiet -- data/questionnaire.json; then
+          if ! git diff --quiet -- data/questionnaire.json || test -n "$(git ls-files --others --exclude-standard -- data/questionnaire-crossings.json)" || ! git diff --quiet -- data/questionnaire-crossings.json; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -- data/questionnaire.json
+            git add -- data/questionnaire.json data/questionnaire-crossings.json
             git commit -m 'Actualiser les statistiques agrégées du questionnaire'
             git push origin HEAD:main
           fi
@@ -49,4 +49,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh api --method POST 'repos/${{ github.repository }}/pages/builds' --silent
       - name: Résumé
-        run: echo 'Lecture du Sheet réussie ; publication Pages demandée. Seul le JSON agrégé peut être modifié.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Lecture du Sheet réussie ; publication Pages demandée. Seuls les deux fichiers agrégés peuvent être modifiés.' >> "$GITHUB_STEP_SUMMARY"

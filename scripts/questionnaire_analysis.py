@@ -10,6 +10,7 @@ from collections import Counter
 
 import numpy as np
 from scipy import stats
+from questionnaire_crossings import build_crossings
 
 PURCHASE = ['achat_499', 'achat_549', 'achat_599']
 SCALE = ['Très faible', 'Faible', 'Moyenne', 'Élevée', 'Très élevée']
@@ -189,7 +190,7 @@ def evaluate(rows,group_stats):
             'distributions':group_stats(rows)['distributions']}
 
 
-def build_analysis(rows,group_stats):
+def build_analysis(rows,group_stats,labels=None):
     current=[r for r in rows if r['variant'] in ('16 g','48 g')]
     valid_vw=[r for r in current if price_valid(r)]
     complete=[r for r in valid_vw if all(r[k] in SCALE for k in PURCHASE)]
@@ -197,10 +198,13 @@ def build_analysis(rows,group_stats):
         binary=[int(row[k] in SCALE[-2:]) for k in PURCHASE]
         return any(b>a for a,b in zip(binary,binary[1:]))
     strict=[r for r in complete if not inversion(r)]
-    return {'version':1,'policy_date':'2026-11-04','direction':'48 g moins 16 g',
+    report={'version':1,'policy_date':'2026-11-04','direction':'48 g moins 16 g',
             'flow':[{'label':'Base retenue sur la page Questionnaire','removed':0,'remaining':len(rows)},
                     {'label':'Ancienne version 36 g, hors comparaison actuelle','removed':len(rows)-len(current),'remaining':len(current)},
                     {'label':'VW : quatre seuils absents, négatifs ou désordonnés','removed':len(current)-len(valid_vw),'remaining':len(valid_vw)},
                     {'label':'Achat : au moins une des trois réponses absente','removed':len(valid_vw)-len(complete),'remaining':len(complete)},
                     {'label':'Achat : favorable à un prix après un prix inférieur non favorable','removed':len(complete)-len(strict),'remaining':len(strict)}],
             'bases':{'retained':evaluate(current,group_stats),'strict':evaluate(strict,group_stats)}}
+    if labels is not None:
+        report['explorer']=build_crossings(current,strict,labels)
+    return report

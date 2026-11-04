@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import quote
 from build_questionnaire_data import build, rows_from_values, REQUIRED, PRICE_KEYS, canonical_header
 from questionnaire_price_formats import restore_price_dates, column_letter
+from questionnaire_export import write_snapshot
 
 SHEET_ID = '1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y'
 OUTPUT = Path(__file__).resolve().parents[1] / 'data/questionnaire.json'
@@ -16,17 +17,7 @@ def save_aggregates(values, output=OUTPUT, restored_price_cells=0):
         raise ValueError('Version de questionnaire inconnue : vérifier le Sheet avant publication.')
     data['manual_update'] = False
     data['refresh_interval_minutes'] = 60
-    previous = json.loads(output.read_text()) if output.exists() else None
-    if previous:
-        # A timestamp alone must not generate a new commit every hour.
-        comparable = lambda d: {k: v for k, v in d.items() if k != 'updated_at'}
-        if comparable(previous) == comparable(data):
-            return False
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = output.with_suffix('.tmp')
-    temporary.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
-    temporary.replace(output)
-    return True
+    return write_snapshot(data,output)
 
 
 def main():

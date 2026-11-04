@@ -150,3 +150,55 @@ Tests : statistiques connues de Welch/chi², cellules théoriques insuffisantes,
 IC et variances nulles, Holm, puissance, plateaux VW, effectifs séquentiels,
 non-mutation des réponses, absence d'identifiants dans la sortie, compatibilité de
 l'ancien tableau de bord et lecture commune des instantanés.
+
+
+## Mise à jour : explorateur de croisements filtrés
+
+La section 6 remplace les trois croisements fixes par un explorateur. Les anciennes
+corrélations restent dans le calcul pour compatibilité, mais la section affiche les
+paires choisies par le visiteur. Ce filtre est local à la section : les tests A/B,
+prix et conclusions des autres sections gardent la base du haut de page.
+
+Six critères de profil cumulables avec ET : genre, tranche d'âge, CSP, sport,
+consommation de glaces, habitudes de produits protéinés. Une modalité par critère,
+ou toutes ; les manquants peuvent être sélectionnés explicitement. Concept all/16/48
+et base retained/strict restent distincts. Les profils filtrés sont calculés à partir
+des réponses retenues de cette même base, jamais par multiplication de proportions.
+
+Les quatorze variables catégorielles peuvent être sélectionnées ensemble : toutes
+les paires non ordonnées, au maximum 91. Les prix libres exacts restent dans la section
+Prix. Tout croiser signifie afficher les associations par paires ; cela ne constitue
+pas une analyse simultanée multivariée ni un ajustement des facteurs de confusion.
+
+Le calcul privé prépare toutes les combinaisons présentes des six critères (64
+sous-ensembles par réponse) et par concept/base. Seuls les segments filtrés d'au moins
+cinq réponses sont publiés ; l'absence d'une combinaison ne signifie pas zéro. Les
+paires à moins de cinq réponses valides ne sont pas détaillées. Le seuil de cinq est
+une convention de lecture, sans garantie de puissance, de représentativité ou
+d'anonymat : les croisements qui se recouvrent et les petites cellules peuvent encore
+être informatifs. Aucune réponse brute, identifiant, date, âge exact, prix exact ou
+vecteur individuel n'est publié. Les sous-ensembles égaux sont mutualisés uniquement
+en mémoire avant de produire les tableaux agrégés.
+
+Pour les paires ordinales : Spearman avec ex aequo, p asymptotique uniquement à partir
+de trente paires valides. Age, scores et fréquence croissants ; sport, fréquence de
+glaces et habitudes protéinées sont inversés par rapport à leurs libellés visuels
+pour que « élevé » signifie « fréquent ». Une variable constante ne produit pas de
+test. Au moins une variable nominale : chi² sans Yates, V de Cramer général
+sqrt(chi²/(n*(min(lignes,colonnes)-1))), p uniquement si toutes les cases théoriques
+sont >=5. Les lignes/colonnes de total nul sont retirées du calcul du test.
+
+La correction de Holm est recalculée côté affichage pour tous les tests interprétables
+des paires actuellement sélectionnées, y compris les tableaux non dépliés. Elle ne
+couvre pas toutes les sélections exploratoires essayées successivement. Les effectifs,
+bases par ligne/colonne, manquants et pourcentages par ligne/colonne/total sont explicités.
+Les options de sélection et filtres persistent lors d'une nouvelle synchronisation.
+
+Depuis cet ajout, la publication comporte deux fichiers agrégés dans le même commit :
+`data/questionnaire.json` reste léger et contient le SHA-256 du supplément
+`data/questionnaire-crossings.json`. La page de résultats garde sa lecture légère.
+Le supplément n'est chargé par l'analyse qu'au changement d'empreinte, et son empreinte
+est vérifiée avant affichage : jamais de mélange entre deux instantanés. Une publication
+encore incomplète ou un échec de lecture affiche un état d'attente et réessaie à la
+prochaine vérification. Le workflow et l'export manuel préparent les deux fichiers,
+les tests vérifient la cohérence et l'absence de commit pour une date seule.

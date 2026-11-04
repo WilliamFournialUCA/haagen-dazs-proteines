@@ -142,7 +142,7 @@ function render(){
  tests('analysis-profiles',a.profiles);tests('analysis-outcomes',a.outcomes);
  const r=a.outcomes[0];phrase('analysis-power','Intention : puissance de planification pour un petit effet d = 0,2 : '+pct(r.power_small,1)+' ; pour un effet moyen d = 0,5 : '+pct(r.power_medium,1)+'. Calcul au seuil bilatéral de 5 %, sans correction, pour n48 = '+r.a.n+' et n16 = '+r.b.n+'.');
  $('analysis-outcomes').append(link('Sensibilité de l’intention sur les rangs : Mann–Whitney, p '+pv(r.mw_p)+' ; corrélation bisérielle de rang = '+f(r.mw_effect)+'.'));
- table('analysis-associations',['Question exploratoire','Paires valides','ρ de Spearman','p brute','p Holm'],a.associations.map(r=>[r.label,link(r.n),link(f(r.rho)),link(pv(r.p)),link(pv(r.p_adjusted))]));
+ QuestionnaireCrossings.render(data,base);
  prices();conclusions();
 }
 QuestionnaireLive.subscribe(d=>{
