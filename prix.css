@@ -68,3 +68,31 @@
 .pb-gg-bar { display:block; height:5px; border-radius:3px; background:#ece3df; margin-top:5px; }
 .pb-gg-bar i { display:block; height:100%; width:var(--bar); border-radius:inherit; background:var(--pb-teal); }
 .pb-gg-table td:nth-child(3) .pb-gg-bar i { background:var(--brand); }
+.pb-lidl h2,.pb-vw-panel h2 { margin:6px 0 12px; font-size:clamp(1.28rem,2.5vw,1.7rem); }
+.pb-lidl p:last-child { margin-bottom:0; }
+.pb-lidl,.pb-vw-panel,.pb-gg-panel { margin:16px 0; }
+.pb-vw-charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.pb-vw-chart { margin:0; padding:10px; border:1px solid var(--pb-border); border-radius:9px; min-width:0; }
+.pb-vw-chart figcaption { padding:1px 4px 7px; }
+.pb-vw-chart figcaption strong { font:700 1rem system-ui; }
+.pb-vw-svg { display:block; width:100%; height:auto; overflow:visible; }
+.pb-vw-svg text { font:18px system-ui,sans-serif; fill:#5b4c53; }
+.vw-grid { stroke:#decec7; stroke-width:1; }
+.vw-area { fill:#e4eee8; }
+.vw-curve { fill:none; stroke-width:3.1; stroke-linejoin:round; stroke-linecap:round; }
+.vw-price { stroke:#61243a; stroke-width:1.9; stroke-dasharray:2 5; }
+.pb-vw-svg .vw-price-label { fill:#61243a; font-weight:700; }
+.vw-too-cheap { --vw-ink:#166763; stroke:var(--vw-ink); }
+.vw-bargain { --vw-ink:#2b6498; stroke:var(--vw-ink); stroke-dasharray:8 5; }
+.vw-expensive { --vw-ink:#985d22; stroke:var(--vw-ink); stroke-dasharray:8 5; }
+.vw-too-expensive { --vw-ink:#9d3252; stroke:var(--vw-ink); }
+.pb-vw-legend { display:flex; gap:5px 16px; flex-wrap:wrap; padding:0; list-style:none; margin:10px 0 14px; font-size:.88rem; }
+.pb-vw-legend li { display:flex; align-items:center; gap:6px; }
+.vw-key { display:inline-block; width:24px; border-top:3px solid var(--vw-ink); }
+.vw-key:is(.vw-bargain,.vw-expensive) { border-top-style:dashed; }
+.pb-intersections { padding:0; margin:12px 0 0; list-style:none; }
+.pb-intersections li { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 4px; border-top:1px solid var(--pb-border); font-size:.88rem; }
+.pb-intersections small { display:block; color:var(--pb-muted); font-size:.82rem; line-height:1.4; }
+.pb-intersections strong { text-align:right; flex-shrink:0; font-size:.88rem; }
+.pb-gg-table { max-width:690px; }
+@media(max-width:780px) { .pb-vw-charts { grid-template-columns:1fr; } }
