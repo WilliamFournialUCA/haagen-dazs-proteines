@@ -26,7 +26,16 @@ function calculate({target=12,kind='wpc',volume=1000000,loss=2,shock=0}={}) {
  const launchCash=recurringCash+60000;
  return {target,kind,volume,loss,shock,concentration,powderPrice,powderKg,baseKg,ingredients,baseCost,powderCost,raw,process,preLoss,lossCost,packaging,packageCost,inbound,storage,transport,variableFactory,variable,fixed,fixedTotal,full,production,recurringCash,launchCash,annualFull:full*volume};
 }
-if(typeof module!=='undefined'&&module.exports) module.exports={calculate,prices,fractions};
+// Comparatif fixe de la section 7 : mêmes hypothèses centrales, tension sur matières et procédés.
+function calculateStress(){
+ const central=calculate();
+ return (central.raw*1.25+.08+.06+.04+.02+.015)/.95+.28+.04+.20+.22;
+}
+function volumeForCeiling(ceiling=3.5){
+ const central=calculate();
+ return ceiling>central.variable?Math.ceil(central.fixedTotal/(ceiling-central.variable)):null;
+}
+if(typeof module!=='undefined'&&module.exports) module.exports={calculate,calculateStress,volumeForCeiling,prices,fractions};
 if(typeof document==='undefined') return;
 const euro=(x,n=2)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:n,maximumFractionDigits:n}).format(x)+' €';
 const number=(x,n=0)=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:n}).format(x);
