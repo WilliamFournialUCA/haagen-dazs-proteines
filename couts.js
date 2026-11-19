@@ -1,15 +1,18 @@
 /* Modèle pédagogique : les références de prix et les hypothèses sont documentées dans couts.html. */
 (function () {
 'use strict';
-const prices={cream:3,milk:3.5378,sugar:.503,yolk:7,chocolate:17.05,cocoa:6.42,hazelnut:13.81,water:.004};
+// Prix en €/kg. Chocolat et jaune : valeur déclarée / masse nette, Comext janvier–août 2026.
+const prices={cream:4.25,milk:3.5378,sugar:.503,yolk:6.41,chocolate:6.84,cocoa:6.42,hazelnut:7.26,water:.004};
+const powderPrices={wpc:15.25,wpi:25.25}; // Milieux des fourchettes Foodcom du 17/11/2026.
+const powderSource="https://foodcom.pl/fr/marche-europeen-des-produits-laitiers-hausse-des-prix-du-lait-ecreme-en-poudre-smp-et-du-gouda-baisse-des-prix-du-beurre-de-la-creme-et-du-wpc80-327e-edition-de-la-newsletter-foodcom-dairy/";
 const fractions={cream:.32,milk:.07,sugar:.12,yolk:.04,chocolate:.10,cocoa:.02,hazelnut:.05,water:.28};
 // H1 : 4,5 % est un proxy du Belgian Chocolate classique, pas une analyse de notre panier.
 const nativeProtein=.045;
-function calculate({target=12,kind='wpc',volume=1000000,loss=2,shock=0}={}) {
- if (![4.5,9,12].includes(target)||!['wpc','wpi'].includes(kind)||!Number.isFinite(volume)||volume<1000||!Number.isFinite(loss)||loss<0||loss>10||!Number.isFinite(shock)||shock< -30||shock>50) throw Error('Paramètres hors limites');
- const concentration=(kind==='wpc'?.8:.9)*.95, powderPrice=(kind==='wpc'?20.25:25.75)*(1+shock/100);
+function calculate({target=12,kind='wpc',volume=1000000,loss=2,shock=0,chocolatePrice=prices.chocolate}={}) {
+ if (![4.5,9,12].includes(target)||!['wpc','wpi'].includes(kind)||!Number.isFinite(volume)||volume<1000||!Number.isFinite(loss)||loss<0||loss>10||!Number.isFinite(shock)||shock< -30||shock>50||!Number.isFinite(chocolatePrice)||chocolatePrice<0) throw Error('Paramètres hors limites');
+ const concentration=(kind==='wpc'?.8:.9)*.95, powderPrice=powderPrices[kind]*(1+shock/100);
  const powderKg=.4*(target/100-nativeProtein)/(concentration-nativeProtein),baseKg=.4-powderKg;
- const ingredients=Object.fromEntries(Object.keys(prices).map(k=>[k,{kg:baseKg*fractions[k],cost:baseKg*fractions[k]*prices[k]}]));
+ const ingredients=Object.fromEntries(Object.keys(prices).map(k=>[k,{kg:baseKg*fractions[k],cost:baseKg*fractions[k]*(k==='chocolate'?chocolatePrice:prices[k])}]));
  const baseCost=Object.values(ingredients).reduce((s,x)=>s+x.cost,0),powderCost=powderKg*powderPrice,raw=baseCost+powderCost;
  const process={labour:47.7*4/3600,energy:.25*.1488,clean:.025,stabiliser:.02,roasting:.015};
  // Le rendement s'applique aux matières et à la transformation avant conditionnement.
@@ -51,7 +54,7 @@ function update(){
  put('base-amount',number(m.baseKg*1000,2)+' g');
  for(const [k,v] of Object.entries(m.ingredients)){put('qty-'+k,number(v.kg*1000,2)+' g');put('cost-'+k,euro(v.cost,3));}
  put('qty-powder',number(m.powderKg*1000,2)+' g');put('price-powder',euro(m.powderPrice,2)+'/kg');put('cost-powder',euro(m.powderCost,3));
- const priceEl=document.getElementById('price-powder'); priceEl.href='https://www.dcamarketintelligence.com/update/3442/dca-market-intelligence-launches-new-price-benchmarks-for-europe-s-fast-growing-whey-protein-market';
+ const priceEl=document.getElementById('price-powder'); priceEl.href=powderSource;
  document.querySelector('[data-protein-source]').href=priceEl.href;
  put('powder-summary',number(m.powderKg*1000,2)+' g de poudre pour '+number(m.target*4,0)+' g de protéines totales par pot');
  put('protein-net',number(m.concentration*100,1)+' % de la poudre livrée');
@@ -59,7 +62,7 @@ function update(){
  put('target-message',m.full<=3.5?'Sous le plafond de 3,50 € HT dans ce scénario.':'Au-dessus du plafond de 3,50 € HT dans ce scénario. Revoir volume, recette ou achats.');
  const base=calculate({...p,target:4.5});
  put('extra-cost',euro(m.full-base.full,3));
- document.getElementById('price-powder').title='Calcul à partir du repère industriel (WPC80 et WPI90 : DCA, 8 avril 2026, repères historiques) ; variation de scénario : '+m.shock+' %.';
+ document.getElementById('price-powder').title='Milieu de la fourchette de gros Foodcom du 17 novembre 2026 ; variation de scénario : '+m.shock+' %.';
  for(const k of ['raw','lossCost','variableFactory','variable','full','production','baseCost','packageCost']) put('cost-'+k,euro(m[k],3));
  for(const [k,v] of Object.entries(m.process))put('cost-'+k,euro(v,3));
  put('cost-fixed',euro(m.fixedTotal/m.volume,3));
