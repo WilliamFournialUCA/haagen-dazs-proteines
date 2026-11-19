@@ -1,15 +1,17 @@
 /* Modèle pédagogique : les références de prix et les hypothèses sont documentées dans couts.html. */
 (function () {
 'use strict';
-const prices={cream:3,milk:3.2106,sugar:.5,yolk:7,vanilla:40,water:.004};
-const fractions={cream:.40,milk:.08,sugar:.16,yolk:.04,vanilla:.01,water:.31};
+const prices={cream:3,milk:3.5378,sugar:.503,yolk:7,chocolate:17.05,cocoa:6.42,hazelnut:13.81,water:.004};
+const fractions={cream:.32,milk:.07,sugar:.12,yolk:.04,chocolate:.10,cocoa:.02,hazelnut:.05,water:.28};
+// H1 : 4,5 % est un proxy du Belgian Chocolate classique, pas une analyse de notre panier.
+const nativeProtein=.045;
 function calculate({target=12,kind='wpc',volume=1000000,loss=2,shock=0}={}) {
- if (![4.3,9,12].includes(target)||!['wpc','wpi'].includes(kind)||!Number.isFinite(volume)||volume<1000||!Number.isFinite(loss)||loss<0||loss>10||!Number.isFinite(shock)||shock< -30||shock>50) throw Error('Paramètres hors limites');
- const concentration=(kind==='wpc'?.8:.9)*.95, powderPrice=(kind==='wpc'?21:25.75)*(1+shock/100);
- const powderKg=.4*(target/100-.043)/(concentration-.043),baseKg=.4-powderKg;
+ if (![4.5,9,12].includes(target)||!['wpc','wpi'].includes(kind)||!Number.isFinite(volume)||volume<1000||!Number.isFinite(loss)||loss<0||loss>10||!Number.isFinite(shock)||shock< -30||shock>50) throw Error('Paramètres hors limites');
+ const concentration=(kind==='wpc'?.8:.9)*.95, powderPrice=(kind==='wpc'?20.25:25.75)*(1+shock/100);
+ const powderKg=.4*(target/100-nativeProtein)/(concentration-nativeProtein),baseKg=.4-powderKg;
  const ingredients=Object.fromEntries(Object.keys(prices).map(k=>[k,{kg:baseKg*fractions[k],cost:baseKg*fractions[k]*prices[k]}]));
  const baseCost=Object.values(ingredients).reduce((s,x)=>s+x.cost,0),powderCost=powderKg*powderPrice,raw=baseCost+powderCost;
- const process={labour:47.7*4/3600,energy:.25*.1488,clean:.025,stabiliser:.02};
+ const process={labour:47.7*4/3600,energy:.25*.1488,clean:.025,stabiliser:.02,roasting:.015};
  // Le rendement s'applique aux matières et à la transformation avant conditionnement.
  const preLoss=raw+Object.values(process).reduce((a,b)=>a+b,0),lossCost=preLoss/(1-loss/100)-preLoss;
  const packaging={pot:.11,lid:.05,seal:.025,case:.035};
@@ -36,18 +38,19 @@ function update(){
  put('volume-display',number(m.volume)+' pots/an');put('loss-display',number(m.loss,1)+' %');put('shock-display',(m.shock>0?'+':'')+number(m.shock)+' %');
  for(const key of ['variable','full','production']) put('result-'+key,euro(m[key]));
  put('result-cash',euro(m.launchCash,0));put('result-annual',euro(m.annualFull,0));
- put('scenario-label',m.target+' g/100 g · '+m.kind.toUpperCase()+(m.kind==='wpc'?'80':'90')+' · '+number(m.volume)+' pots vendus/an');
+ put('scenario-label','Belgian Chocolate Hazelnut protéinée · '+m.target+' g/100 g · '+m.kind.toUpperCase()+(m.kind==='wpc'?'80':'90')+' · '+number(m.volume)+' pots vendus/an');
  put('base-amount',number(m.baseKg*1000,2)+' g');
  for(const [k,v] of Object.entries(m.ingredients)){put('qty-'+k,number(v.kg*1000,2)+' g');put('cost-'+k,euro(v.cost,3));}
  put('qty-powder',number(m.powderKg*1000,2)+' g');put('price-powder',euro(m.powderPrice,2)+'/kg');put('cost-powder',euro(m.powderCost,3));
- const priceEl=document.getElementById('price-powder'); priceEl.href=m.kind==='wpc'?'https://vespertool.com/blog/commodity-price-risk-management/':'https://www.dcamarketintelligence.com/update/3442/dca-market-intelligence-launches-new-price-benchmarks-for-europe-s-fast-growing-whey-protein-market';
+ const priceEl=document.getElementById('price-powder'); priceEl.href='https://www.dcamarketintelligence.com/update/3442/dca-market-intelligence-launches-new-price-benchmarks-for-europe-s-fast-growing-whey-protein-market';
  document.querySelector('[data-protein-source]').href=priceEl.href;
+ put('powder-summary',number(m.powderKg*1000,2)+' g de poudre pour '+number(m.target*4,0)+' g de protéines totales par pot');
  put('protein-net',number(m.concentration*100,1)+' % de la poudre livrée');
  put('cost-headroom',euro(3.5-m.full,2));
  put('target-message',m.full<=3.5?'Sous le plafond de 3,50 € HT dans ce scénario.':'Au-dessus du plafond de 3,50 € HT dans ce scénario. Revoir volume, recette ou achats.');
- const base=calculate({...p,target:4.3});
+ const base=calculate({...p,target:4.5});
  put('extra-cost',euro(m.full-base.full,3));
- document.getElementById('price-powder').title='Calcul à partir du repère industriel (WPC80 : Vesper, 7 octobre 2026 ; WPI90 : DCA, 8 avril 2026) ; variation de scénario : '+m.shock+' %.';
+ document.getElementById('price-powder').title='Calcul à partir du repère industriel (WPC80 et WPI90 : DCA, 8 avril 2026, repères historiques) ; variation de scénario : '+m.shock+' %.';
  for(const k of ['raw','lossCost','variableFactory','variable','full','production','baseCost','packageCost']) put('cost-'+k,euro(m[k],3));
  for(const [k,v] of Object.entries(m.process))put('cost-'+k,euro(v,3));
  put('cost-fixed',euro(m.fixedTotal/m.volume,3));
@@ -56,11 +59,10 @@ function update(){
  put('unit-annual',euro(m.annualFull,0));
  put('loss-formula',number(m.loss,1)+' % : '+euro(m.preLoss,3)+' ÷ '+number(1-m.loss/100,3)+' − '+euro(m.preLoss,3));
  const tbody=document.querySelector('#sensitivity tbody');tbody.replaceChildren();
- for(const volume of [100000,500000,1000000,5000000]){const n=calculate({...p,volume});const tr=document.createElement('tr');for(const text of [number(volume),euro(n.variable,3),euro(n.fixedTotal/volume,3),euro(n.full,3),euro(n.annualFull,0)]){const td=document.createElement('td');td.textContent=text;tr.append(td);}tbody.append(tr);}
+ for(const volume of [100000,500000,1000000,5000000]){const n=calculate({...p,volume});const tr=document.createElement('tr');for(const text of [number(volume),euro(n.variable,3),euro(n.fixedTotal/volume,3),euro(n.full,3),euro(n.annualFull,0)]){const td=document.createElement('td');const a=document.createElement('a');a.href='https://github.com/WilliamFournialUCA/haagen-dazs-proteines/blob/main/couts.js';a.target='_blank';a.rel='noopener noreferrer';a.title='Calcul du groupe : paramètres H1 à H4 du modèle';a.textContent=text;td.append(a);tr.append(td);}tbody.append(tr);}
  const bars=document.querySelector('#cost-bars');bars.replaceChildren();
  const groups=[['Matières',m.raw/(1-m.loss/100)],['Transformation',Object.values(m.process).reduce((a,b)=>a+b,0)/(1-m.loss/100)],['Emballage et réception',m.packageCost+m.inbound],['Froid et transport',m.storage+m.transport],['Charges fixes réparties',m.fixedTotal/m.volume]];
- for(const [label,value]of groups){const row=document.createElement('div');row.className='cost-bar-row';const text=document.createElement('span');text.textContent=label+' · '+euro(value,2);const track=document.createElement('div');track.className='cost-track';const bar=document.createElement('div');bar.className='cost-fill';bar.style.width=(100*value/m.full)+'%';track.append(bar);row.append(text,track);bars.append(row);}
+ for(const [label,value]of groups){const row=document.createElement('div');row.className='cost-bar-row';const text=document.createElement('a');text.href='https://github.com/WilliamFournialUCA/haagen-dazs-proteines/blob/main/couts.js';text.target='_blank';text.rel='noopener noreferrer';text.title='Calcul du groupe : décomposition du modèle';text.textContent=label+' · '+euro(value,2);const track=document.createElement('div');track.className='cost-track';const bar=document.createElement('div');bar.className='cost-fill';bar.style.width=(100*value/m.full)+'%';track.append(bar);row.append(text,track);bars.append(row);}
 }
 form.addEventListener('input',update);form.addEventListener('reset',()=>setTimeout(update,0));update();
 })();
-
