@@ -27,7 +27,7 @@ function curves(g){
  for(const v of [0,25,50,75,100]){s('line',{x1:65,y1:y(v),x2:855,y2:y(v),stroke:'#dfd5ca'});s('text',{x:52,y:y(v)+4,'text-anchor':'end','font-size':12},v+' %');}
  for(let i=0;i<=5;i++){const v=max*i/5;s('text',{x:x(v),y:315,'text-anchor':'middle','font-size':12},euro(v));}
  for(const[k,color]of [['too_cheap','#711b36'],['bargain','#b28b51'],['expensive','#568373'],['too_expensive','#7b719e']])s('polyline',{points:p.curves.map(c=>x(c.price)+','+y(c[k])).join(' '),fill:'none',stroke:color,'stroke-width':3});
- root.append(svg,node('p','Trop bas · Bonne affaire · Cher · Trop cher. Traits interpolés entre les seuils observés ; ils ne prédisent pas les ventes.','label'));
+ root.append(svg);
  const labels=node('div',undefined,'curve-legend');[['Trop bas','#711b36'],['Bonne affaire','#b28b51'],['Cher','#568373'],['Trop cher','#7b719e']].forEach(([label,c])=>{const e=node('span',label);e.style.borderColor=c;labels.append(e);});root.append(labels);
  const details=node('details'),sum=node('summary','Voir les valeurs du graphique');details.append(sum);const wrap=node('div',undefined,'table-wrap'),t=node('table');let tr=node('tr');for(const h of ['Prix TTC','Trop bas','Bonne affaire','Cher','Trop cher']){const th=node('th',h);th.scope='col';tr.append(th);}const head=node('thead');head.append(tr);t.append(head);const body=node('tbody');for(const c of p.curves){tr=node('tr');cell(tr,linked(euro(c.price)),true);for(const k of ['too_cheap','bargain','expensive','too_expensive'])cell(tr,linked(fmt(c[k])+' %'));body.append(tr);}t.append(body);wrap.append(t);details.append(wrap);root.append(details);
 }
@@ -61,59 +61,29 @@ function crossing(){
  }
  const note=$('cross-note');note.replaceChildren();
  views.forEach((view,i)=>{if(i)note.append(node('br'));note.append(linked('Concept '+view.version+' g : '+view.n+' réponse(s) complète(s) sur '+view.total+' retenue(s) ; '+view.missing+' non utilisée(s) pour valeur manquante dans ce croisement.'));});
- note.append(node('br'),'Les deux versions sont décrites séparément ; les pourcentages ne mesurent pas leur différence statistique.');
-}
-function interpretations(g){
- const list=clear('interpretations');
- const add=t=>list.append(node('li',t));
- if(!g.n){add('Aucune réponse dans la sélection : aucun pourcentage ni comparaison ne peut être calculé.');return;}
- add('Échantillon affiché : '+g.n+' réponse(s). Une personne représente '+fmt(100/g.n)+' points de pourcentage. '+(g.n<30?'Effectif très faible : les graphiques sont affichés pour suivre la collecte, sans conclusion de marché.':'Les résultats restent descriptifs ; la représentativité du recrutement n’est pas démontrée.'));
- if(g.prices.n)add('Prix « bonne affaire » médian : '+euro(g.prices.medians[1])+' sur '+g.prices.n+' réponse(s) ordonnée(s). Ce montant n’est pas un prix optimal ni une recommandation commerciale.');
- const p=g.purchase[0];if(p.n)add('À 4,99 € TTC, '+p.top2+' personne(s) sur '+p.n+' déclarent une probabilité d’achat élevée ou très élevée ('+pct(p.top2,p.n)+'). Il s’agit d’une intention, pas d’un achat observé.');
- const a=data.groups['16'],b=data.groups['48'];
- if(!a.n||!b.n)add('La comparaison actuelle 16 g / 48 g est impossible pour le moment : il manque des réponses dans au moins un groupe.');
- else{const x=a.distributions.intention_achat,y=b.distributions.intention_achat;if(x.n&&y.n){const nx=x.counts.slice(-2).reduce((s,c)=>s+c.count,0),ny=y.counts.slice(-2).reduce((s,c)=>s+c.count,0);const gap=100*ny/y.n-100*nx/x.n;add('Intention générale favorable : '+pct(nx,x.n)+' pour 16 g (n='+x.n+') et '+pct(ny,y.n)+' pour 48 g (n='+y.n+'). Écart absolu : '+fmt(Math.abs(gap))+' points'+(gap>0?' en faveur du concept 48 g':gap<0?' en faveur du concept 16 g':' : égalité descriptive')+'. Aucun effet statistiquement établi.');}}
- const perception=g.distributions.perception_proteines;if(perception.n){const agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);add('Glace perçue comme riche en protéines : '+pct(agree,perception.n)+' d’accord (scores 4 ou 5), sur '+perception.n+' réponse(s) à cette nouvelle question. Cette perception ne mesure pas la mémorisation du grammage.');}else add('La nouvelle question sur la richesse en protéines ne dispose pas encore de réponse exploitable dans cette sélection.');
- add('Les présentations visuelles des deux versions diffèrent : un écart éventuel ne peut pas être attribué au seul nombre de grammes. Les participations multiples d’une même personne et les abandons ne sont pas vérifiables dans cet export.');
-}
-function renderQuality(){
- const q=data.quality_control,root=clear('quality-status');
- root.append('Base d’analyse globale : ',linked(String(q.retained)),' réponse(s) retenue(s) sur ',linked(String(q.received)),' collectée(s) ; ',linked(String(q.excluded)),' exclue(s). ');
- const jump=node('a','Voir la méthode et les motifs en bas de page');jump.href='#qualite-reponses';root.append(jump);
- table('quality-flow',['Indicateur · ensemble de la collecte','Effectif'],[
-  ['Enregistrements collectés',linked(String(q.received))],
-  ['exclure_analyse = oui · exclus',linked(String(q.excluded))],
-  ['exclure_analyse = non · retenus',linked(String(q.retained))],
-  ['Dont signalés à vérifier, mais conservés',linked(String(q.flagged_retained))]]);
- table('quality-reasons',['Décision d’exclusion','Effectif'],q.reasons.map(r=>[r.label,linked(String(r.count))]));
- table('quality-flags',['Signal parmi les réponses retenues','Effectif'],q.flags.map(r=>[r.label,linked(String(r.count))]));
- $('quality-policy-date').textContent='Règles définies le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeZone:'Europe/Paris'}).format(new Date(q.policy_date+'T12:00:00Z'))+' · appliquées à chaque actualisation. Une ligne peut cumuler plusieurs signaux.';
- $('price-format-restoration').replaceChildren(linked(String(q.restored_price_cells)),' cellule(s) de prix affichée(s) comme des décimales mais stockée(s) en dates par Google Sheets ont été restituées à leur valeur décimale dans le lecteur, sans modifier le Sheet. Seul le format de date d.m vérifié est pris en charge ; les autres formats ambigus bloquent la publication pour contrôle. Ces conversions techniques ne sont pas des signes de réponse fictive.');
- const s=q.sensitivity[selected];$('sensitivity-base').textContent='Comparaison pour '+(selected==='all'?'l’ensemble des réponses':selected+' g')+' · prix lus de façon identique avant et après exclusion.';
- table('quality-sensitivity',['Base','Effectif','Intention favorable · base renseignée','Bonne affaire médiane · base prix'],[['Avant exclusions globales',s.before],['Après exclusions globales',s.after]].map(([label,z])=>[label,linked(String(z.n)),linked(pct(z.intention_top2,z.intention_n)+' (n='+z.intention_n+')'),linked(euro(z.bargain_median)+' (n='+z.price_n+')')]));
- $('qualite-reponses').hidden=false;
 }
 function render(){
  const g=data.groups[selected];$('selected-base').textContent='Sélection : '+(selected==='all'?'réponses retenues, ensemble':selected+' g')+' · n = '+g.n;
  $('n-total').replaceChildren(linked(String(g.n)));$('n-price').replaceChildren(linked(g.prices.n+' / '+g.n));
  const d=g.distributions.intention_achat,top=d.counts.slice(-2).reduce((s,c)=>s+c.count,0);$('n-positive').replaceChildren(linked(pct(top,d.n)));$('positive-base').textContent=top+' sur '+d.n+' réponses renseignées · scores 4 ou 5.';
- $('sample-warning').textContent=g.n===0?'Aucune réponse pour cette sélection. Les graphiques restent vides.':g.n<30?'Collecte en cours : n = '+g.n+'. Un pourcentage élevé peut correspondre à une seule personne. Les croisements décrivent cet échantillon, sans permettre de conclure sur le marché.':'Lecture descriptive : recrutement et représentativité à documenter. Un grand effectif ne supprime pas les biais de sélection.';
  dist('chart-variant','variant',g,'donut');dist('chart-genre','genre',g,'donut');
  for(const k of ['perception_proteines','age_band','csp','sport','culpabilite','frequence_glaces','proteines_habitude','intention_achat','retenu_proteines'])dist('chart-'+k,k,g);
  table('price-summary',['Seuil','Médiane TTC','Base'],['Trop bas','Bonne affaire','Cher','Trop cher'].map((l,i)=>[l,linked(euro(g.prices.medians[i])),linked(String(g.prices.n))]));
- $('price-quality').textContent='Prix cohérents : '+g.prices.n+' / '+g.n+'. Incomplets, non numériques ou négatifs : '+g.prices.missing_or_negative+'. Ordre incohérent : '+g.prices.unordered+'. Les autres réponses restent utilisées pour leurs questions renseignées.';
- curves(g);$('opp').textContent=g.prices.equal_rejection?'Point d’égal rejet interpolé : '+euro(g.prices.equal_rejection.low)+(Math.abs(g.prices.equal_rejection.high-g.prices.equal_rejection.low)>.001?' à '+euro(g.prices.equal_rejection.high):'')+'. Repère de perception, pas optimum commercial.':'Point d’égal rejet non publié avant 30 quadruplets cohérents dans la sélection. Ce seuil éditorial n’est pas une garantie de validité statistique.';
+ $('price-quality').textContent='Base des prix : '+g.prices.n+' réponses complètes et ordonnées sur '+g.n+'.';
+ curves(g);$('opp').textContent=g.prices.equal_rejection?'Point d’égal rejet interpolé : '+euro(g.prices.equal_rejection.low)+(Math.abs(g.prices.equal_rejection.high-g.prices.equal_rejection.low)>.001?' à '+euro(g.prices.equal_rejection.high):'')+'.':g.prices.n<30?'Point d’égal rejet non affiché : moins de 30 réponses cohérentes.':'Aucun point d’égal rejet calculable.';
  for(const p of g.purchase)dist('chart-'+p.key,p.key,g);
  table('purchase-summary',['Prix TTC','Probabilité élevée ou très élevée','Base'],g.purchase.map(p=>[linked(euro(p.price)),linked(p.top2+' · '+pct(p.top2,p.n)),linked(String(p.n))]));
  table('version-comparison',['Version','Effectif','Bonne affaire médiane','Intention favorable','Mémorisation exacte*','Perçue riche en protéines'],['16','48',...(data.groups['36'].n?['36']:[])].map(v=>{const z=data.groups[v],d=z.distributions.intention_achat,t=d.counts.slice(-2).reduce((s,c)=>s+c.count,0);const perception=z.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);return[v==='36'?'36 g · ancien concept':v+' g',linked(String(z.n)),linked(euro(z.prices.medians[1])),linked(pct(t,d.n)+' (n='+d.n+')'),linked(pct(z.memory.correct,z.memory.numeric)+' (n='+z.memory.numeric+')'),linked(pct(agree,perception.n)+' (n='+perception.n+')')];}));
- const perception=g.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);$('perception-status').textContent=data.quality.perception_data_available?'Nouvelle question : '+perception.n+' réponse(s) renseignée(s) dans la sélection ; '+perception.missing+' valeur(s) absente(s). Les questionnaires antérieurs peuvent ne pas comporter cette question.':'La question est présente dans le questionnaire actuel, mais la colonne perception_proteines n’est pas encore transmise dans le Google Sheet. Les résultats apparaîtront dès son enregistrement dans le fichier source.';table('perception-summary',['Indicateur','Valeur'],[['D’accord ou tout à fait d’accord',linked(agree+' / '+perception.n+' · '+pct(agree,perception.n))],['Base renseignée',linked(String(perception.n))],['Valeur absente',linked(String(perception.missing))]]);
+ const perception=g.distributions.perception_proteines,agree=perception.counts.slice(-2).reduce((s,c)=>s+c.count,0);table('perception-summary',['Indicateur','Valeur'],[['D’accord ou tout à fait d’accord',linked(agree+' / '+perception.n+' · '+pct(agree,perception.n))],['Base renseignée',linked(String(perception.n))],['Valeur absente',linked(String(perception.missing))]]);
  const m=g.memory;table('memory-summary',['Indicateur','Valeur'],[['Déclare avoir retenu',linked(m.said_yes+' / '+g.distributions.retenu_proteines.n+' · '+pct(m.said_yes,g.distributions.retenu_proteines.n))],['Saisit un nombre après « Oui »',linked(m.numeric+' / '+m.said_yes)],['Nombre exact parmi les réponses numériques',linked(m.correct+' / '+m.numeric+' · '+pct(m.correct,m.numeric))]]);
- crossing();interpretations(g);renderQuality();
+ crossing();
 }
 QuestionnaireLive.subscribe(d=>{
  if(d.schema_version!==3||!d.groups?.all)throw Error('Format non reconnu');
  const initial=!data;data=d;
- const date=new Date(data.updated_at);$('snapshot-date').textContent='Données préparées le '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(date)+(data.manual_update===false?' · synchronisation horaire ; date du dernier changement des statistiques.':' · instantané manuel.');
+ const date=new Date(data.updated_at);$('snapshot-date').textContent='Dernière mise à jour des résultats : '+new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(date)+'.';
+ const q=data.quality_control;
+ $('quality-status').replaceChildren(linked(String(q.received)),' réponses collectées · ',linked(String(q.retained)),' retenues · ',linked(String(q.excluded)),' exclues.');
  $('variant-filter').querySelector('option[value="36"]').hidden=!data.groups['36'].n;
  if(selected==='36'&&!data.groups['36'].n){selected='all';$('variant-filter').value='all';}
  if(initial){
@@ -121,6 +91,14 @@ QuestionnaireLive.subscribe(d=>{
   $('variant-filter').addEventListener('change',e=>{selected=e.target.value;render();});for(const id of ['cross-version','cross-x','cross-y','cross-z'])$(id).addEventListener('change',crossing);
  }
  $('loading').hidden=true;$('survey-dashboard').hidden=false;render();
-},(error,hasData)=>{$('loading').hidden=false;$('loading').textContent=hasData?'Actualisation temporairement indisponible : le dernier instantané affiché est conservé.':'Les statistiques ne sont pas disponibles. Consultez le fichier source ou réessayez plus tard. Aucun résultat de remplacement n’est inventé.';});
+},(error,hasData)=>{$('loading').hidden=false;$('loading').textContent=hasData?'Actualisation temporairement indisponible : le dernier instantané affiché est conservé.':'Les statistiques ne sont pas disponibles. Consultez le volet des sources ou réessayez plus tard.';});
 document.addEventListener('questionnaire:healthy',()=>{if(data)$('loading').hidden=true;});
+function revealSources(){
+ const id=location.hash.slice(1);
+ if(id!=='qualite-reponses'&&id!=='sources-resultats')return;
+ $('sources-resultats').open=true;
+ if(id==='qualite-reponses')$('qualite-reponses').scrollIntoView();
+}
+window.addEventListener('hashchange',revealSources);
+revealSources();
 })();
