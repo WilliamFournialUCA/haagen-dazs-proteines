@@ -11,7 +11,7 @@ window.QuestionnaireLive={subscribe(onData,onError){
    if(!response.ok)throw new Error('Snapshot unavailable');
    const text=await response.text(),data=JSON.parse(text);
    if(data.schema_version!==3||!data.groups?.all||!data.quality_control)throw new Error('Unknown snapshot');
-   if(text!==previous){onData(data);previous=text;}
+   if(text!==previous){onData({...data,source_url:'data/questionnaire.json'});previous=text;}
    else document.dispatchEvent(new Event('questionnaire:healthy'));
   }catch(error){onError(error,previous!==null);}
   finally{busy=false;}
