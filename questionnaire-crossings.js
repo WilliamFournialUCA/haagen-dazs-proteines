@@ -132,7 +132,9 @@ function update(snapshot,selectedBase){
  (async()=>{
   try{
    if(meta.url!=='data/questionnaire-crossings.json'||!/^[a-f0-9]{64}$/.test(expected))throw Error('Unknown aggregate source');
-   const response=await fetch(meta.url+'?snapshot='+expected,{cache:'no-store'});
+   const archive=panel?.dataset.aggregateUrl;
+   if(archive&&archive!=='data/analyse-112/questionnaire-crossings.json')throw Error('Unknown archive');
+   const response=await fetch((archive||meta.url)+'?snapshot='+expected,{cache:archive?'default':'no-store'});
    if(!response.ok)throw Error('Unavailable aggregates');
    const text=await response.text();
    const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
@@ -143,7 +145,7 @@ function update(snapshot,selectedBase){
    if(data.analysis?.explorer?.sha256!==expected)return;
    payload=parsed;payloadHash=expected;display();
   }catch(error){
-   if(data.analysis?.explorer?.sha256===expected){$('crossings-pending').hidden=false;$('crossings-pending').textContent='Les croisements de cet instantané ne sont pas encore disponibles. Nouvelle tentative à la prochaine vérification ; aucun ancien groupe n’est mélangé aux nouvelles données.';}
+   if(data.analysis?.explorer?.sha256===expected){$('crossings-pending').hidden=false;$('crossings-pending').textContent=panel?.dataset.aggregateUrl?'Les croisements de la base figée n’ont pas pu être chargés. Refermez puis rouvrez ce volet pour réessayer.':'Les croisements de cet instantané sont temporairement indisponibles.';}
   }finally{if(pendingHash===expected)pendingHash=null;}
  })();
 }

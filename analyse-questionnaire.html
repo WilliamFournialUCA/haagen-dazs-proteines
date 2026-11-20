@@ -3,15 +3,12 @@
 <h1>Des réponses aux conclusions.</h1>
 <p class="lead">La qualité d’abord, les tests ensuite. Une lecture du questionnaire suivant le cours de Vincent Favarin, appliquée aux concepts 16 g et 48 g.</p>
 <p>Projet pédagogique sans affiliation ni validation par Häagen-Dazs ou General Mills.</p>
-<p id="analysis-date" class="label">Chargement de l’instantané commun aux deux pages…</p>
+<p id="analysis-date" class="label">Chargement de la base figée de l’analyse…</p>
 <p id="analysis-loading" role="status">Chargement des analyses…</p><noscript>Activez JavaScript pour afficher les résultats calculés. Les liens vers le cours et la méthode restent disponibles.</noscript>
 <div id="analysis-content" hidden>
 <div class="analysis-intro"><span class="tag">Méthode CM3</span><p id="analysis-takeaway"></p><a href="questionnaire.html">Voir les résultats du questionnaire →</a></div>
 <p class="label analysis-base-line">Base d’analyse : <strong id="analysis-base-label">cohérence des prix</strong> · <span id="analysis-base-count"></span></p>
-<details class="analysis-optional-control"><summary>Changer la base d’analyse</summary>
-<div class="survey-toolbar"><label for="analysis-base">Base utilisée dans les analyses</label><select id="analysis-base"><option value="strict">Base avec cohérence des prix · méthode du CM3</option><option value="retained">Base retenue sur la page Questionnaire · sensibilité</option></select></div>
-<p class="label">La base avec cohérence des prix est affichée par défaut. L’autre base permet de vérifier si les conclusions changent. Ce choix ne modifie ni le fichier source ni la page Questionnaire.</p>
-</details>
+
 <div class="grid" id="analysis-metrics"></div>
 <nav class="results-nav" aria-label="Plan de l’analyse"><a href="#analyse-qualite">1 · Qualité</a><a href="#analyse-descriptifs">2 · Décrire</a><a href="#analyse-manipulation">3 · Manipulation</a><a href="#analyse-ab">4 · Test A/B</a><a href="#analyse-prix">5 · Prix</a><a href="#analyse-echelles">6 · Échelles</a><a href="#analyse-conclusions">7 · Décider</a></nav>
 <section id="analyse-qualite"><h2>1. Vérifier avant de calculer.</h2>
@@ -72,12 +69,12 @@
 </div>
 <section id="analyse-liens" aria-labelledby="analyse-liens-titre" class="analysis-extras">
 <h2 id="analyse-liens-titre">Pour aller plus loin</h2>
-<details id="analysis-crossings-panel" class="analysis-explorer-panel">
+<details id="analysis-crossings-panel" class="analysis-explorer-panel" data-aggregate-url="data/analyse-112/questionnaire-crossings.json">
 <summary><span class="analysis-extras-open">Ouvrir les filtres et croisements</span><span class="analysis-extras-close">Masquer les filtres et croisements</span><span class="analysis-extras-icon" aria-hidden="true"></span></summary>
 <div class="analysis-extras-body">
 <p>Filtrez les profils, puis choisissez les variables à croiser. Les critères se cumulent : par exemple, une tranche d’âge <em>et</em> une catégorie socioprofessionnelle. L’outil affiche un tableau par paire de variables.</p>
 <p class="label">Les filtres de ce volet ne changent pas l’analyse présentée plus haut.</p>
-<div id="crossings-pending" role="status">Préparation des croisements au prochain instantané…</div>
+<div id="crossings-pending" role="status">Chargement des croisements de la base figée…</div>
 <div id="crossings-explorer" hidden>
 <fieldset class="crossings-fieldset"><legend>1 · Définir le groupe à analyser</legend>
 <div class="crossings-filter-grid"><div><label for="crossings-concept">Concept présenté</label><select id="crossings-concept"><option value="all">Deux concepts actuels</option><option value="16">16 g</option><option value="48">48 g</option></select></div><div id="crossings-profile-filters" class="crossings-filter-contents"></div></div>
@@ -107,8 +104,8 @@
 <li><a href="https://data.iae-mod.fr/seances/seance-td-1.html" target="_blank" rel="noopener noreferrer">TD1 — nature des variables, descriptifs, graphiques et traçabilité</a>.</li>
 <li><a href="https://data.iae-mod.fr/seances/seance-cm-2.html" target="_blank" rel="noopener noreferrer">CM2 — choix des tests, conditions, taille d’effet, puissance et corrélation</a>.</li>
 <li><a href="https://data.iae-mod.fr/seances/seance-cm-3.html" target="_blank" rel="noopener noreferrer">CM3 — analyser le projet de Prix, du nettoyage aux échelles</a> ; <a href="https://github.com/VincentFavarin/analyse-projet-prix/tree/6deb7a41345b1f22abcd64fd46bc7cbfb25e57f1" target="_blank" rel="noopener noreferrer">squelette pédagogique consulté</a>. Les calculs de cette page sont une implémentation adaptée, avec les différences décrites ci-dessus ; le squelette original n’a pas été modifié.</li>
-<li><a href="https://docs.google.com/spreadsheets/d/1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Réponses au questionnaire — Google Sheet, onglet Réponses</a> : source directe des chiffres cliquables, selon les permissions du propriétaire.</li>
-<li><a href="https://github.com/rofaure7/questionnaire-haagen-dazs/blob/master/index.html" target="_blank" rel="noopener noreferrer">Questions, modalités, visuels et affectation aléatoire</a>.</li>
-<li><a href="https://github.com/WilliamFournialUCA/haagen-dazs-proteines/blob/main/docs/analyse-questionnaire.md" target="_blank" rel="noopener noreferrer">Protocole des calculs et différences avec le cours</a> ; <a href="https://github.com/WilliamFournialUCA/haagen-dazs-proteines/blob/main/scripts/questionnaire_analysis.py" target="_blank" rel="noopener noreferrer">code des statistiques</a> ; <a href="data/questionnaire.json" download>télécharger l’instantané agrégé commun</a>.</li>
-</ul><p>Les deux pages lisent le même instantané agrégé produit par la synchronisation horaire existante. Le volet des croisements charge à l’ouverture des données agrégées issues du même instantané. Tant qu’elles sont ouvertes, elles vérifient chaque minute si un nouvel instantané est publié et le relisent au retour sur l’onglet. Une erreur conserve le dernier affichage en le signalant. Aucune réponse brute, aucun âge exact ni horodatage individuel n’est publié. Les commentaires suivent des règles explicites ; la programmation a bénéficié d’une assistance IA.</p></section>
-</main><footer>Projet universitaire indépendant · M1 Marketing · 2026–2027. Sans affiliation ni validation par Häagen-Dazs ou General Mills. Résultats déclaratifs, statistiques agrégées.<br>Concept étudiant, sans affiliation officielle à Häagen-Dazs. Aucune réponse individuelle publiée sur ce site.</footer><button class="back-to-top" type="button" aria-label="Revenir en haut de page" title="Revenir en haut" hidden>↑</button><script src="front.js?v=20261012-front" defer></script><script src="questionnaire-live.js?v=20261104" defer></script><script src="questionnaire-crossings.js?v=20261120-lecture" defer></script><script src="analyse-questionnaire.js?v=20261120-lecture" defer></script></body></html>
+<li><a href="https://docs.google.com/spreadsheets/d/1OYrRl9a1m4ecisvPufCnD8QVC_Vc8PwsiJupL_eqD7Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Réponses au questionnaire — Google Sheet, onglet Réponses</a> : fichier de collecte évolutif ; il n’alimente plus les résultats de cette analyse.</li>
+<li><a href="questionnaire-formulaire.html">Questionnaire en lecture seule</a> et <a href="https://htmlpreview.github.io/?https://gist.githubusercontent.com/rofaure7/0cea6df263632d2b98cf973634b2cc2a/raw/rapport_prix_complet.html" target="_blank" rel="noopener noreferrer">rapport de référence du groupe</a> : même effectif brut ; les règles de sélection peuvent différer selon le calcul.</li>
+<li><a href="https://github.com/WilliamFournialUCA/haagen-dazs-proteines/blob/main/docs/analyse-questionnaire.md" target="_blank" rel="noopener noreferrer">Protocole des calculs et différences avec le cours</a> ; <a href="https://github.com/WilliamFournialUCA/haagen-dazs-proteines/blob/main/scripts/questionnaire_analysis.py" target="_blank" rel="noopener noreferrer">code des statistiques</a> ; <a href="data/analyse-112/questionnaire.json" download>télécharger la base agrégée figée</a>.</li>
+</ul><p>La page d’analyse et ses croisements utilisent une archive commune de la collecte de référence. Les nouvelles participations peuvent apparaître dans l’onglet Questionnaire sans changer cette analyse ni les chiffres utilisés pour la décision. Aucune réponse brute, aucun âge exact ni horodatage individuel n’est publié. Les commentaires suivent des règles explicites ; la programmation a bénéficié d’une assistance IA.</p></section>
+</main><footer>Projet universitaire indépendant · M1 Marketing · 2026–2027. Sans affiliation ni validation par Häagen-Dazs ou General Mills. Résultats déclaratifs, statistiques agrégées.<br>Concept étudiant, sans affiliation officielle à Häagen-Dazs. Aucune réponse individuelle publiée sur ce site.</footer><button class="back-to-top" type="button" aria-label="Revenir en haut de page" title="Revenir en haut" hidden>↑</button><script src="front.js?v=20261012-front" defer></script><script src="questionnaire-crossings.js?v=20261120-base112" defer></script><script src="analyse-questionnaire.js?v=20261120-base112" defer></script></body></html>

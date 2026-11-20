@@ -20,6 +20,15 @@ Implémentation distincte adaptée à un site statique et au questionnaire réel
 `scripts/questionnaire_analysis.py`, calcul SciPy/NumPy. Les exemples fictifs du cours
 ne sont jamais incorporés aux réponses réelles.
 
+## Analyse de référence figée
+
+Depuis le 20 novembre 2026, la page Analyse du questionnaire utilise exclusivement
+`data/analyse-112/questionnaire.json` (112 réponses à la collecte, 104 dans la base
+principale après les contrôles de prix) et `data/analyse-112/questionnaire-crossings.json`.
+Ces archives reproduisent les agrégats existants, sans modifier les résultats du
+site. Le lecteur live et la synchronisation continuent d’alimenter la page Questionnaire
+uniquement. Les passages ci-dessous sur le lecteur commun décrivent l’ancien déploiement.
+
 ## Deux bases explicites
 
 Le contrôle général `exclure_analyse` reste inchangé : voir

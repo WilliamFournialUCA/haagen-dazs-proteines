@@ -1,13 +1,14 @@
 (function(){
 'use strict';
-let data,base='strict',priceVersion='all';
+const archiveUrl='data/analyse-112/questionnaire.json',base='strict';
+let data,priceVersion='all';
 const $=id=>document.getElementById(id);
 const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
 const f=(v,d=2)=>v===null||v===undefined||!Number.isFinite(v)?'—':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:d}).format(v);
 const euro=v=>v===null||v===undefined?'—':f(v)+' €';
 const pct=(a,n)=>a!==null&&a!==undefined&&n?f(100*a/n,1)+' %':'—';
 const pv=v=>v===null||v===undefined?'Non interprétée':v<.001?'< 0,001':f(v,3);
-const link=text=>{const a=el('a',String(text));a.href=data.source_url;a.target='_blank';a.rel='noopener noreferrer';a.title='Données : Google Sheet ; calculs décrits dans le protocole';return a;};
+const link=text=>{const a=el('a',String(text));a.href=data.source_url;a.target='_blank';a.rel='noopener noreferrer';a.title='Archive de l’analyse : statistiques agrégées figées';return a;};
 function table(id,headers,rows,caption){
  const root=$(id);root.replaceChildren();const wrap=el('div',undefined,'table-wrap'),t=el('table');
  if(caption)t.append(el('caption',caption));
@@ -130,9 +131,8 @@ function conclusions(){
 }
 function render(){
  const a=current(),q=data.quality_control;
- $('analysis-base-label').textContent=base==='strict'?'cohérence des prix':'réponses retenues · contrôle de sensibilité';
  phrase('analysis-base-count',a.n+' réponses · 16 g : '+a.n_16+' · 48 g : '+a.n_48);
- phrase('analysis-takeaway','Un même fichier, deux lectures : '+q.retained+' réponses retenues dans le tableau de bord ; '+data.analysis.bases.strict.n+' dans la base avec cohérence des prix. Les conclusions restent exploratoires.');
+ phrase('analysis-takeaway','Analyse de référence figée sur '+q.received+' réponses collectées. Après les contrôles de cohérence des prix, la base principale compte '+a.n+' réponses. Les nouvelles participations ne modifient pas cette analyse.');
  const cards=[['Collectées',q.received],['Base sélectionnée',a.n],['Retraits supplémentaires',data.analysis.bases.retained.n-a.n]],metrics=$('analysis-metrics');metrics.replaceChildren();
  cards.forEach(([label,value])=>{const c=el('div',undefined,'card');c.append(el('div',label,'label'));const n=el('div',undefined,'metric');n.append(link(value));c.append(n);metrics.append(c);});
  quality();descriptions();tests('analysis-manipulation-table',[a.manipulation],false);manipulationPlot(a.manipulation);
@@ -154,19 +154,26 @@ function revealCrossings(){
 }
 window.addEventListener('hashchange',revealCrossings);
 revealCrossings();
-QuestionnaireLive.subscribe(d=>{
- if(d.analysis?.version!==1)throw new Error('Analysis not yet prepared');
- const initial=!data;data=d;
- if(initial){
-  for(const[k,v]of Object.entries(data.variables)){const o=el('option',v.label);o.value=k;$('analysis-variable').append(o);}$('analysis-variable').value='intention_achat';
-  $('analysis-base').addEventListener('change',e=>{base=e.target.value;render();});
+async function loadArchive(){
+ try{
+  const response=await fetch(archiveUrl);
+  if(!response.ok)throw Error('Archive unavailable');
+  const d=await response.json(),retained=d.analysis?.bases?.retained,strict=d.analysis?.bases?.strict;
+  if(d.schema_version!==3||d.analysis?.version!==1||d.quality_control?.received!==112||
+    retained?.n_16!==52||retained?.n_48!==60||strict?.n!==104)throw Error('Unexpected analysis archive');
+  data={...d,source_url:archiveUrl};
+  for(const[k,v]of Object.entries(data.variables)){const o=el('option',v.label);o.value=k;$('analysis-variable').append(o);}
+  $('analysis-variable').value='intention_achat';
   $('analysis-variable').addEventListener('change',descriptions);
   $('analysis-price-version').addEventListener('change',e=>{priceVersion=e.target.value;prices();});
   ['analysis-cost','analysis-net'].forEach(id=>$(id).addEventListener('input',margin));
+  const date=new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeZone:'Europe/Paris'}).format(new Date(d.updated_at));
+  phrase('analysis-date','Analyse figée · archive des résultats du '+date+'.');
+  render();$('analysis-loading').hidden=true;$('analysis-content').hidden=false;
+  if(location.hash==='#analyse-liens')$('analyse-liens').scrollIntoView();
+ }catch(error){
+  $('analysis-loading').textContent='La base figée est temporairement inaccessible. Rechargez la page ou consultez le rapport de référence ci-dessous.';
  }
- const date=new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Paris'}).format(new Date(d.updated_at));
- phrase('analysis-date','Instantané commun préparé le '+date+' · Europe/Paris · '+(d.manual_update===false?'synchronisation horaire':'instantané manuel')+'.');
- render();$('analysis-loading').hidden=true;$('analysis-content').hidden=false;
-},(error,hasData)=>{$('analysis-loading').hidden=false;$('analysis-loading').textContent=hasData?'Actualisation temporairement indisponible : les dernières analyses affichées sont conservées.':'Les analyses ne sont pas disponibles. Réessayez plus tard ; aucun résultat n’est inventé.';});
-document.addEventListener('questionnaire:healthy',()=>{if(data)$('analysis-loading').hidden=true;});
+}
+loadArchive();
 })();
