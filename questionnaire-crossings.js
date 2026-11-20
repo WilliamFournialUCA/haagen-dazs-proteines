@@ -119,6 +119,8 @@ function render(){
 }
 function update(snapshot,selectedBase){
  data=snapshot;base=selectedBase;
+ const panel=$('analysis-crossings-panel');
+ if(panel&&!panel.open)return;
  const meta=data.analysis?.explorer;
  if(meta?.version!==1){$('crossings-pending').hidden=false;$('crossings-explorer').hidden=true;return;}
  if(meta.pool){payload=meta;display();return;}
@@ -146,6 +148,8 @@ function update(snapshot,selectedBase){
  })();
 }
 function display(){
+ const panel=$('analysis-crossings-panel');
+ if(panel&&!panel.open)return;
  if(!initialized)initialize();
  $('crossings-pending').hidden=true;$('crossings-explorer').hidden=false;render();
 }

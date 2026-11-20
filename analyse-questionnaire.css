@@ -2,5 +2,21 @@
 
 .analysis-intro p a{font:inherit;text-decoration-thickness:1px;text-underline-offset:4px}
 
-/* Filtered cross-tab explorer, scoped to section 6. */
+/* Filtered cross-tab explorer, scoped to the optional explorer. */
 .crossings-fieldset{border:1px solid #dfd5ca;border-radius:10px;padding:22px;margin:24px 0;background:#fffdf8;min-width:0}.crossings-fieldset legend{font:21px Georgia,serif;color:#711b36;padding:0 8px}.crossings-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.crossings-filter-contents{display:contents}.crossings-filter-grid label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}.crossings-filter-grid select{width:100%;font-size:14px!important}.crossings-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.crossings-secondary{font:inherit;font-size:13px;padding:9px 14px;border:1px solid #cdbbc0;border-radius:22px;background:#fffdf8;color:#711b36;cursor:pointer}.crossings-secondary:hover{background:#f3e9e9}.crossings-secondary:focus-visible,.crossings-check:focus-within{outline:3px solid #b28b51;outline-offset:3px}.crossings-checkboxes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.crossings-check{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e5d8d7;border-radius:8px;font-size:14px;cursor:pointer}.crossings-check:has(input:checked){background:#f3e7e9;border-color:#a78086}.crossings-check input{width:18px!important;height:18px;flex-shrink:0;accent-color:#711b36}.crossings-segment{padding:20px 24px;border-left:3px solid #711b36;background:#f3e9e9;border-radius:0 8px 8px 0}.crossings-segment strong{font:25px Georgia,serif;color:#711b36}.crossings-segment p{margin:8px 0;font-size:14px}.crossings-pair{border:1px solid #dfd5ca;border-radius:8px;margin:12px 0;padding:18px;background:#fffdf8}.crossings-pair summary{font:18px/1.4 Georgia,serif!important;color:#711b36}.crossings-pair td a{display:block;min-width:74px;border-radius:3px;padding:3px 5px;font-variant-numeric:tabular-nums}.crossings-pair .table-wrap{margin-bottom:8px!important}.crossings-overview{margin-bottom:20px}#crossings-search{width:100%!important;margin-top:7px}#crossings-show-more{margin:16px 0}.crossings-check[hidden]{display:none!important}@media(max-width:640px){.crossings-filter-grid,.crossings-checkboxes{grid-template-columns:1fr}.crossings-fieldset{padding:16px}.crossings-pair{padding:13px}}
+
+/* Lecture principale, avec commandes disponibles à la demande. */
+.analysis-base-line{margin:18px 0 4px}
+.analysis-optional-control{margin:10px 0 16px}
+#analysis-content .analysis-optional-control>summary{font:600 .95rem/1.5 system-ui,sans-serif}
+.analysis-optional-control .survey-toolbar{margin:10px 0 12px}
+.analysis-explorer-panel{margin:12px 0 0;padding:0;border:0}
+#analysis-content .analysis-explorer-panel>summary{display:inline-flex;align-items:center;gap:12px;max-width:100%;min-height:44px;padding:8px 14px;border:1px solid var(--brand,#6c172f);border-radius:8px;background:var(--brand,#6c172f);color:#fffdf8;font:600 1rem/1.4 system-ui,sans-serif;list-style:none;cursor:pointer}
+.analysis-explorer-panel>summary::-webkit-details-marker{display:none}
+#analysis-content .analysis-explorer-panel>summary:hover{background:#84213e;color:#fffdf8}
+.analysis-extras-close,.analysis-explorer-panel[open] .analysis-extras-open{display:none}
+.analysis-explorer-panel[open] .analysis-extras-close{display:inline}
+.analysis-extras-icon::before{content:"+";font-size:1.2em}
+.analysis-explorer-panel[open] .analysis-extras-icon::before{content:"−"}
+.analysis-extras-body{margin-top:16px}
+@media print{.analysis-extras,.analysis-optional-control{display:none}}

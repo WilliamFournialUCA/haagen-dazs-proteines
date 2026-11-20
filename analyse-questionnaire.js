@@ -130,6 +130,7 @@ function conclusions(){
 }
 function render(){
  const a=current(),q=data.quality_control;
+ $('analysis-base-label').textContent=base==='strict'?'cohérence des prix':'réponses retenues · contrôle de sensibilité';
  phrase('analysis-base-count',a.n+' réponses · 16 g : '+a.n_16+' · 48 g : '+a.n_48);
  phrase('analysis-takeaway','Un même fichier, deux lectures : '+q.retained+' réponses retenues dans le tableau de bord ; '+data.analysis.bases.strict.n+' dans la base avec cohérence des prix. Les conclusions restent exploratoires.');
  const cards=[['Collectées',q.received],['Base sélectionnée',a.n],['Retraits supplémentaires',data.analysis.bases.retained.n-a.n]],metrics=$('analysis-metrics');metrics.replaceChildren();
@@ -145,6 +146,14 @@ function render(){
  QuestionnaireCrossings.render(data,base);
  prices();conclusions();
 }
+const crossingsPanel=$('analysis-crossings-panel');
+crossingsPanel.addEventListener('toggle',()=>{if(crossingsPanel.open&&data)QuestionnaireCrossings.render(data,base);});
+function revealCrossings(){
+ if(location.hash!=='#analyse-liens')return;
+ crossingsPanel.open=true;
+}
+window.addEventListener('hashchange',revealCrossings);
+revealCrossings();
 QuestionnaireLive.subscribe(d=>{
  if(d.analysis?.version!==1)throw new Error('Analysis not yet prepared');
  const initial=!data;data=d;
