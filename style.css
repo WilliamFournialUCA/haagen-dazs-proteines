@@ -44,3 +44,7 @@ footer{background:#f3ece5;padding:30px}
 @media(max-width:740px){header{position:relative;backdrop-filter:none}header>div{padding:16px 18px}main{padding-top:30px}.hero{gap:30px}.concept{max-width:360px;min-height:260px}.brand-banner{margin:28px 0}.brand-banner img{aspect-ratio:3/1}.steps a{padding-left:8px;font-size:14px}.steps .muted{display:block;font-size:12px}.back-to-top{right:14px;bottom:14px}[id]{scroll-margin-top:20px}h1{letter-spacing:-1px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation:none!important;transition:none!important}.concept:hover,.card:hover,.button:hover,.brand-banner:hover img{transform:none}}
 @media print{header{position:static;box-shadow:none;backdrop-filter:none}.reading-progress,.back-to-top,.brand-banner{display:none}.table-wrap{box-shadow:none}body{background:white}}
+
+/* Keep tab widths stable when the current page changes. */
+header nav a,header nav a[aria-current]{font-weight:600;white-space:nowrap}
+html{scrollbar-gutter:stable}
