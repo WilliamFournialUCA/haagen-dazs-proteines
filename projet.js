@@ -17,28 +17,11 @@ function rates(labels){
  }
  return {n,yes};
 }
-function joint(version){
- const extra=data.three_way,keys=['age_band','proteines_habitude','intention_achat'];
- if(extra?.version!==1)return null;
- const id=extra.triples.findIndex(t=>keys.every(k=>t.includes(k)));
- if(id<0||!extra.groups[version]?.tables[id])return null;
- const axes=keys.map(k=>extra.triples[id].indexOf(k));
- const age=data.variables.age_band.options.indexOf('18–24 ans'),protein=data.variables.proteines_habitude.options.indexOf('Oui, régulièrement');
- let n=0,yes=0;
- for(const cell of extra.groups[version].tables[id].cells){
-  if(cell[axes[0]]!==age||cell[axes[1]]!==protein)continue;
-  n+=cell[3];if(['4','5'].includes(data.variables.intention_achat.options[cell[axes[2]]]))yes+=cell[3];
- }
- return {n,yes};
-}
 const range=p=>Math.abs(p.high-p.low)>.005?euros(p.low)+' à '+euros(p.high):euros(p.low);
 function render(snapshot){
  data=snapshot;
  const regular=rates(['Oui, régulièrement']),other=rates(['Rarement','Jamais']);
  append('project-target-evidence','Dans les deux concepts actuels réunis, l’intention générale favorable atteint ',link(pct(regular.yes,regular.n)+' chez les consommateurs réguliers de produits protéinés ('+regular.yes+'/'+regular.n+')'),', contre ',link(pct(other.yes,other.n)+' chez ceux qui en consomment rarement ou jamais ('+other.yes+'/'+other.n+')'),'. Lecture descriptive de l’échantillon.');
- const a=joint('16'),b=joint('48');
- if(a&&b)append('project-joint-target','Chez les répondants de ',link('18–24 ans consommant régulièrement des produits protéinés, '+(a.yes+b.yes)+' sur '+(a.n+b.n)+' déclarent une intention générale favorable ('+pct(a.yes+b.yes,a.n+b.n)+')'),', les deux versions réunies. Pour le seul concept enrichi : ',link(b.yes+' sur '+b.n+' ('+pct(b.yes,b.n)+')'),'. Ces petits effectifs orientent une hypothèse de ciblage ; ils ne valident pas une demande nationale.');
- else append('project-joint-target','Le croisement simultané de l’âge, de l’habitude protéinée et de l’intention n’est pas disponible dans cet instantané. Les indicateurs par habitude restent descriptifs.');
  const price=data.analysis?.bases?.retained?.prices?.['48'],p=price?.points;
  if(p?.OPP&&p.IPP&&p.PMC&&p.PME){
   append('project-vw-evidence','Sur ',link(price.price_n+' quadruplets de prix cohérents'),' pour le concept enrichi, le point d’égal rejet est d’environ ',link(range(p.OPP)),', le prix d’indifférence d’environ ',link(range(p.IPP)),', la borne basse acceptable de ',link(range(p.PMC)),' et la borne haute d’environ ',link(range(p.PME)),'. ',p.PMC.high<=proposed&&proposed<=p.PME.low?'Notre proposition reste dans cette zone descriptive.':'Notre proposition est à réexaminer au regard de ces repères.',' Le point d’égal rejet n’est pas un optimum de bénéfice.');
