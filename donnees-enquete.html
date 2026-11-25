@@ -1,0 +1,16 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Données du questionnaire</title><link rel="stylesheet" href="style.css"><main id="contenu"><nav><a href="questionnaire.html">Questionnaire</a> · <a href="analyse-questionnaire.html">Analyse du questionnaire</a></nav><h1>Données du questionnaire</h1><p id="etat" role="status">Chargement des tableaux…</p><label for="groupe">Version présentée</label> <select id="groupe"><option value="all">Ensemble</option><option value="16">16 g</option><option value="48">48 g</option></select><div id="tables"></div></main><script>
+const archive=new URLSearchParams(location.search).get('base')==='archive',url='data/'+(archive?'analyse-112/':'')+'questionnaire.json',out=document.querySelector('#tables'),sel=document.querySelector('#groupe'),fmt=n=>Number(n).toLocaleString('fr-FR',{maximumFractionDigits:2});
+function add(p,tag,txt){let e=document.createElement(tag);if(txt!=null)e.textContent=txt;p.append(e);return e}
+function table(p,cols,rows){let scroll=add(p,'div');scroll.style.overflowX='auto';let t=add(scroll,'table'),head=add(add(t,'thead'),'tr');cols.forEach(c=>add(head,'th',c).scope='col');let b=add(t,'tbody');rows.forEach(r=>{let tr=add(b,'tr');r.forEach(v=>add(tr,'td',v))})}
+fetch(url).then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{
+const label=k=>d.variables[k]?.label||k;
+function render(){const g=d.groups[sel.value];out.replaceChildren();document.querySelector('#etat').textContent=(archive?'Archive figée de l’analyse':'Dernier relevé disponible')+' · '+new Date(d.updated_at).toLocaleDateString('fr-FR')+' · '+g.n+' réponses dans la sélection.';
+add(out,'h2','Intention d’achat aux prix testés');table(out,['Prix','Réponses favorables','Base','Part favorable'],g.purchase.map(r=>[fmt(r.price)+' €',r.top2,r.n,r.n?fmt(100*r.top2/r.n)+' %':'—']));
+add(out,'h2','Sensibilité au prix');add(out,'p',g.prices.n+' réponses exploitables.');table(out,['Seuil déclaré','Médiane'],['Trop bas','Bonne affaire','Cher','Trop cher'].map((x,i)=>[x,g.prices.medians[i]==null?'—':fmt(g.prices.medians[i])+' €']));
+let eq=g.prices.equal_rejection;if(eq?.low!=null)add(out,'p','Intersection des rejets extrêmes : '+fmt(eq.low)+' à '+fmt(eq.high)+' €.');
+add(out,'h2','Réponses par question');Object.entries(g.distributions).forEach(([k,x])=>{let sec=add(out,'details');add(sec,'summary',label(k));table(sec,['Réponse','Effectif'],x.counts.map(y=>[y.label,y.count]))});
+add(out,'h2','Croisements disponibles');Object.entries(g.cross).forEach(([k,x])=>{let sec=add(out,'details');add(sec,'summary',k.split('|').map(label).join(' × '));table(sec,['Modalité',...x.columns],x.rows.map((y,i)=>[y,...x.counts[i]]))});
+let a=add(out,'a','Télécharger les données agrégées originales (JSON)');a.href=url}
+sel.onchange=render;render()
+}).catch(()=>document.querySelector('#etat').textContent='Les données n’ont pas pu être chargées. Rechargez la page ou consultez la page Questionnaire.')
+</script></html>

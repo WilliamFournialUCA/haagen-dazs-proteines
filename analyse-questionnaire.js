@@ -161,7 +161,7 @@ async function loadArchive(){
   const d=await response.json(),retained=d.analysis?.bases?.retained,strict=d.analysis?.bases?.strict;
   if(d.schema_version!==3||d.analysis?.version!==1||d.quality_control?.received!==112||
     retained?.n_16!==52||retained?.n_48!==60||strict?.n!==104)throw Error('Unexpected analysis archive');
-  data={...d,source_url:archiveUrl};
+  data={...d,source_url:'donnees-enquete.html?base=archive'};
   for(const[k,v]of Object.entries(data.variables)){const o=el('option',v.label);o.value=k;$('analysis-variable').append(o);}
   $('analysis-variable').value='intention_achat';
   $('analysis-variable').addEventListener('change',descriptions);
